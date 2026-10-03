@@ -143,13 +143,14 @@ int get_token(Token *t){
 				return 0;
 			}
 
-			else if ((c == 'e') || c == 'E'){
+			else if (((c >= '0') && c <= '9') || c == '_'){
 				return 1;
 			}
 
-
+			else return 1; //správně?
 
 		break;
+
 
 	}
 
