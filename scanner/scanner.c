@@ -121,9 +121,9 @@ int get_token(Token *t){
 
 		//neznámý znak
 		else return 1;
-
-	break;
 	}
+
+	
 }
 
 #ifdef SCANNER_TEST
