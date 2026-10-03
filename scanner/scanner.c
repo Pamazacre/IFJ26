@@ -15,53 +15,74 @@ typedef enum { // podobně jako v token.h - jedná se o jakousi kolekci VŠECH s
 	S_INT0,
 	S_INT,
 	S_INT__,
+	S_EOF,
+	S_DOUBLE_DOT,
+	S_ID,
+	S_AT,
+	S_UNS,
+	S_QFIRST,
+	S_QSEC,
+	S_COMMS,
+	S_ASSIGN,
+	S_EXCLAM,
+	S_L_THAN,
+	S_G_THAN,
+
 
 }State;
 
 static int line = 1;
 
-int getToken(Token *tokenT){
+int get_token(Token *tokenT){
 
-	State state = S_START;
+	State state = S_START; //první case jde vždy do S_Start
 	long long value = 0;
 
 	while(1){
 
 		int c = getchar();
 
-		switch (state){ //Jeden velký swithc pro všechny stavy z typedef enum
+		switch (state){ //Jeden velký switch pro všechny stavy z typedef enum
 
-		case S_START:
+		case S_START: // opsání tabulky přechodů stavů ze Startu
 
-			if (c == '\n'){
-				line++;
+			if (isspace(c)){
 			}
-			else if{
+			else if (c == EOF) state = TOKEN_EOF; // v tomto případě už končí
 
-			}
-			else if{
 
-			}
-			else if{
+			//INT
+			else if (c >= '1' && c <= '9') state = S_INT;
+			else if (c == '0') state = S_INT0;
+			
+			//DOUBLE
+			else if(c == '.') S_DOUBLE_DOT;
 
-			}
-			else if{
+			//Identifikátory + klíčová slova
+			else if ((c >= 'a' && c <= 'z')||(c >= 'A' && c <= 'Z')) S_ID;
+			else if (c == '@') S_AT;
+			else if (c == '_') S_UNS;
 
-			}
-			else if{
+			//řetězce
+			//else if(c == '""') S_QFIRST; //to je taky asi špatně
 
-			}
-			else if{
+			//komentáře
+			else if( c == '/') S_COMMS;
 
-			}
-			else if{
-
-			}
-		
-			default:
-			break;
+			//operátory
+			else if( c == '=')  S_ASSIGN;
+			else if( c == '!')  S_EXCLAM;
+			else if( c == '<')  S_L_THAN;
+			else if( c == '>')  S_G_THAN;
+			else if( c == '+')  TOKEN_PLUS;
+			else if( c == '-')  TOKEN_MINUS;
+			else if( c == '*')  TOKEN_MUL;
+			//else if( c == '') ; //jak udělat comma?
+			else if( c == '(')  TOKEN_LPAR;
+			else if( c == ')')  TOKEN_RPAR;
+			else if( c == ':')  TOKEN_COLON;
+			else if( c == ';')  TOKEN_SEMICOLON;
 		}
-
 	}
 }
 
