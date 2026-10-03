@@ -27,6 +27,8 @@ typedef enum { // podobně jako v token.h - jedná se o jakousi kolekci VŠECH s
 	S_EXCLAM,
 	S_L_THAN,
 	S_G_THAN,
+	S_INT_DOT,
+	S_EXP,
 
 
 }State;
@@ -44,86 +46,116 @@ int get_token(Token *t){
 
 	switch (state){ //Jeden velký switch pro všechny stavy z typedef enum
 
-	case S_START: // opsání tabulky přechodů stavů ze Startu
-		t->line = line;                     // token začíná na aktuálním řádku
+		case S_START: // opsání tabulky přechodů stavů ze Startu
+			t->line = line;                     // token začíná na aktuálním řádku
 
-		if (c == '\n') {
-			line++;                        
-		}
-		else if (c == ' ' || c == '\t' || c == '\r') {
-			// bílý znak přeskočit, zůstat v S_START
-		}
-		else if (c == EOF) {
-			t->type = TOKEN_EOF;
-			return 0;
-		}
-
-		// INT
-		else if (c >= '1' && c <= '9') {
-			value = c - '0';
-			state = S_INT;
-		}
-		else if (c == '0') state = S_INT0;
-
-		//DOUBLE 
-		else if (c == '.') state = S_DOUBLE_DOT;
-
-		//Identifikátory + klíčová slova
-		else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) state = S_ID;
-		else if (c == '@') state = S_AT;
-		else if (c == '_') state = S_UNS;
-
-		//řetězce
-		else if (c == '"') state = S_QFIRST;
-
-		//komentáře (a dělení)
-		else if (c == '/') state = S_COMMS;
-
-		//operátory, po kterých může přijít druhý znakelk
-		else if (c == '=') state = S_ASSIGN;
-		else if (c == '!') state = S_EXCLAM;
-		else if (c == '<') state = S_L_THAN;
-		else if (c == '>') state = S_G_THAN;
-
-		//koncový stav bez dalších hran, token je hned hotový
-		else if (c == '+'){
-			 t->type = TOKEN_PLUS;      
-			 return 0; 
+			if (c == '\n') {
+				line++;                        
 			}
-		else if (c == '-'){
-			t->type = TOKEN_MINUS;    
-			return 0; 
+			else if (c == ' ' || c == '\t' || c == '\r') {
+				// bílý znak přeskočit, zůstat v S_START
 			}
-		else if (c == '*'){
-			t->type = TOKEN_MUL;      
-			return 0; 
-			}
-		else if (c == ','){
-			t->type = TOKEN_COMMA;    
-			return 0; 
-			}
-		else if (c == '('){
-			t->type = TOKEN_LPAR;      
-			return 0; 
-			}
-		else if (c == ')'){
-			t->type = TOKEN_RPAR;      
-			return 0; 
-			}
-		else if (c == ':'){
-			t->type = TOKEN_COLON;     
-			return 0;
-			}
-		else if (c == ';'){
-			t->type = TOKEN_SEMICOLON; 
-			return 0; 
+			else if (c == EOF) {
+				t->type = TOKEN_EOF;
+				return 0;
 			}
 
-		//neznámý znak
-		else return 1;
+			// INT
+			else if (c >= '1' && c <= '9') {
+				value = c - '0';
+				state = S_INT;
+			}
+			else if (c == '0') state = S_INT0;
+
+			//DOUBLE 
+			else if (c == '.') state = S_DOUBLE_DOT;
+
+			//Identifikátory + klíčová slova
+			else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) state = S_ID;
+			else if (c == '@') state = S_AT;
+			else if (c == '_') state = S_UNS;
+
+			//řetězce
+			else if (c == '"') state = S_QFIRST;
+
+			//komentáře (a dělení)
+			else if (c == '/') state = S_COMMS;
+
+			//operátory, po kterých může přijít druhý znakelk
+			else if (c == '=') state = S_ASSIGN;
+			else if (c == '!') state = S_EXCLAM;
+			else if (c == '<') state = S_L_THAN;
+			else if (c == '>') state = S_G_THAN;
+
+			//koncový stav bez dalších hran, token je hned hotový
+			else if (c == '+'){
+				t->type = TOKEN_PLUS;      
+				return 0; 
+			}
+
+			else if (c == '-'){
+				t->type = TOKEN_MINUS;    
+				return 0; 
+			}
+
+			else if (c == '*'){
+				t->type = TOKEN_MUL;      
+				return 0; 
+			}
+
+			else if (c == ','){
+				t->type = TOKEN_COMMA;    
+				return 0; 
+			}
+
+			else if (c == '('){
+				t->type = TOKEN_LPAR;      
+				return 0; 
+			}
+
+			else if (c == ')'){
+				t->type = TOKEN_RPAR;      
+				return 0; 
+			}
+
+			else if (c == ':'){
+				t->type = TOKEN_COLON;     
+				return 0;
+			}
+
+			else if (c == ';'){
+				t->type = TOKEN_SEMICOLON; 
+				return 0; 
+			}
+			//neznámý znak
+			else return 1;
+		break;
+
+		case S_INT0:
+
+			if (c == '.'){
+				t->type = S_INT_DOT;
+				return 0;
+			}
+
+			else if ((c == 'e') || c == 'E'){
+				t->type = S_EXP;
+				return 0;
+			}
+
+			else if ((c == 'e') || c == 'E'){
+				return 1;
+			}
+
+
+
+		break;
+
 	}
 
-	
+
+
+
 }
 
 #ifdef SCANNER_TEST
