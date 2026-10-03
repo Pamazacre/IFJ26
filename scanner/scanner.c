@@ -50,7 +50,7 @@ int get_token(Token *t){
 		if (c == '\n') {
 			line++;                        
 		}
-		else if (isspace(c)) {
+		else if (c == ' ' || c == '\t' || c == '\r') {
 			// bílý znak přeskočit, zůstat v S_START
 		}
 		else if (c == EOF) {
@@ -65,21 +65,21 @@ int get_token(Token *t){
 		}
 		else if (c == '0') state = S_INT0;
 
-		// DOUBLE 
+		//DOUBLE 
 		else if (c == '.') state = S_DOUBLE_DOT;
 
-		// Identifikátory + klíčová slova
+		//Identifikátory + klíčová slova
 		else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) state = S_ID;
 		else if (c == '@') state = S_AT;
 		else if (c == '_') state = S_UNS;
 
-		// řetězce
+		//řetězce
 		else if (c == '"') state = S_QFIRST;
 
-		// komentáře (a dělení)
+		//komentáře (a dělení)
 		else if (c == '/') state = S_COMMS;
 
-		// operátory, po kterých může přijít druhý znak
+		//operátory, po kterých může přijít druhý znakelk
 		else if (c == '=') state = S_ASSIGN;
 		else if (c == '!') state = S_EXCLAM;
 		else if (c == '<') state = S_L_THAN;
