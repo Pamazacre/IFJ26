@@ -33,56 +33,96 @@ typedef enum { // podobně jako v token.h - jedná se o jakousi kolekci VŠECH s
 
 static int line = 1;
 
-int get_token(Token *tokenT){
+int get_token(Token *t){
 
 	State state = S_START; //první case jde vždy do S_Start
 	long long value = 0;
 
 	while(1){
 
-		int c = getchar();
+	int c = getchar();
 
-		switch (state){ //Jeden velký switch pro všechny stavy z typedef enum
+	switch (state){ //Jeden velký switch pro všechny stavy z typedef enum
 
-		case S_START: // opsání tabulky přechodů stavů ze Startu
+	case S_START: // opsání tabulky přechodů stavů ze Startu
+		t->line = line;                     // token začíná na aktuálním řádku
 
-			if (isspace(c)){
-			}
-			else if (c == EOF) state = TOKEN_EOF; // v tomto případě už končí
-
-
-			//INT
-			else if (c >= '1' && c <= '9') state = S_INT;
-			else if (c == '0') state = S_INT0;
-			
-			//DOUBLE
-			else if(c == '.') S_DOUBLE_DOT;
-
-			//Identifikátory + klíčová slova
-			else if ((c >= 'a' && c <= 'z')||(c >= 'A' && c <= 'Z')) S_ID;
-			else if (c == '@') S_AT;
-			else if (c == '_') S_UNS;
-
-			//řetězce
-			//else if(c == '""') S_QFIRST; //to je taky asi špatně
-
-			//komentáře
-			else if( c == '/') S_COMMS;
-
-			//operátory
-			else if( c == '=')  S_ASSIGN;
-			else if( c == '!')  S_EXCLAM;
-			else if( c == '<')  S_L_THAN;
-			else if( c == '>')  S_G_THAN;
-			else if( c == '+')  TOKEN_PLUS;
-			else if( c == '-')  TOKEN_MINUS;
-			else if( c == '*')  TOKEN_MUL;
-			//else if( c == '') ; //jak udělat comma?
-			else if( c == '(')  TOKEN_LPAR;
-			else if( c == ')')  TOKEN_RPAR;
-			else if( c == ':')  TOKEN_COLON;
-			else if( c == ';')  TOKEN_SEMICOLON;
+		if (c == '\n') {
+			line++;                        
 		}
+		else if (isspace(c)) {
+			// bílý znak přeskočit, zůstat v S_START
+		}
+		else if (c == EOF) {
+			t->type = TOKEN_EOF;
+			return 0;
+		}
+
+		// INT
+		else if (c >= '1' && c <= '9') {
+			value = c - '0';
+			state = S_INT;
+		}
+		else if (c == '0') state = S_INT0;
+
+		// DOUBLE 
+		else if (c == '.') state = S_DOUBLE_DOT;
+
+		// Identifikátory + klíčová slova
+		else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) state = S_ID;
+		else if (c == '@') state = S_AT;
+		else if (c == '_') state = S_UNS;
+
+		// řetězce
+		else if (c == '"') state = S_QFIRST;
+
+		// komentáře (a dělení)
+		else if (c == '/') state = S_COMMS;
+
+		// operátory, po kterých může přijít druhý znak
+		else if (c == '=') state = S_ASSIGN;
+		else if (c == '!') state = S_EXCLAM;
+		else if (c == '<') state = S_L_THAN;
+		else if (c == '>') state = S_G_THAN;
+
+		//koncový stav bez dalších hran, token je hned hotový
+		else if (c == '+'){
+			 t->type = TOKEN_PLUS;      
+			 return 0; 
+			}
+		else if (c == '-'){
+			t->type = TOKEN_MINUS;    
+			return 0; 
+			}
+		else if (c == '*'){
+			t->type = TOKEN_MUL;      
+			return 0; 
+			}
+		else if (c == ','){
+			t->type = TOKEN_COMMA;    
+			return 0; 
+			}
+		else if (c == '('){
+			t->type = TOKEN_LPAR;      
+			return 0; 
+			}
+		else if (c == ')'){
+			t->type = TOKEN_RPAR;      
+			return 0; 
+			}
+		else if (c == ':'){
+			t->type = TOKEN_COLON;     
+			return 0;
+			}
+		else if (c == ';'){
+			t->type = TOKEN_SEMICOLON; 
+			return 0; 
+			}
+
+		//neznámý znak
+		else return 1;
+
+	break;
 	}
 }
 
