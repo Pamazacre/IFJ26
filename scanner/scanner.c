@@ -204,46 +204,46 @@ int get_token(Token *t){
 		case S_INT_DOT:
 
 			if (c >= '0' && c <= '9'){
-				t->type = S_FRAC;
-				return 0;
+				buf[len++] = c;
+       			state = S_FRAC;
 			}
+			else return 1;
 		break;
 
 		case S_FRAC:
 
 			if (c >= '0' && c <= '9'){
-				t->type = S_FRAC;
-				return 0;
+				buf[len++] = c;
 			}
 			else if ((c == 'e') || c == 'E'){
-				t->type = S_EXP;
-				return 0;
+				buf[len++] = c;
+				state = S_EXP;
 			}
 			else if ((c == 'd') || (c == 'D')){
-				t->type = S_SUFFIX1;
+				buf[len] = '\0';
+				t->type = TOKEN_DOUBLE;
+				t->doubleValue = strtod(buf, NULL);
 				return 0;
 			}
 			else if (c == '_'){
-				t->type = S_FRAC_;
-				return 0;
+				state = S_FRAC_;
+			}
+			else{
+			ungetc(c, stdin);
+        	buf[len] = '\0';
+        	t->type = TOKEN_DOUBLE;
+        	//t->double_value = strtod(buf, NULL);
 			}
 		break;
 
 		case S_FRAC_:
 
 			if (c >= '0' && c <= '9'){
-				t->type = S_FRAC;
-				return 0;
+				buf[len++] = c;
+				state = S_FRAC;
 			}
+		else return 1;
 		break;
-
-		case S_EXP:
-
-		break;
-
-
-
-
 	}
 
 
