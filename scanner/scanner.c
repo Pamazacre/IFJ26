@@ -29,6 +29,9 @@ typedef enum { // podobně jako v token.h - jedná se o jakousi kolekci VŠECH s
 	S_G_THAN,
 	S_INT_DOT,
 	S_EXP,
+	S_FRAC,
+	S_SUFFIX1,
+	S_FRAC_,
 
 
 }State;
@@ -43,6 +46,9 @@ int get_token(Token *t){
 	while(1){
 
 	int c = getchar();
+
+	char buf[64];
+	int len = 0;
 
 	switch (state){ //Jeden velký switch pro všechny stavy z typedef enum
 
@@ -136,12 +142,14 @@ int get_token(Token *t){
 		case S_INT0:
 
 			if (c == '.'){
-				t->type = S_INT_DOT;
+				buf[len++] = c;
+				state = S_INT_DOT;
 				return 0;
 			}
 
 			else if ((c == 'e') || c == 'E'){
-				t->type = S_EXP;
+				buf[len++];
+				state = S_EXP;
 				return 0;
 			}
 
@@ -149,7 +157,12 @@ int get_token(Token *t){
 				return 1;
 			}
 
-			else return 1; //správně?
+			else{
+				ungetc(c, stdin);
+        		t->type = TOKEN_INT;
+        		//t->int_value = 0;
+        		return 0;
+			}
 
 		break;
 
@@ -178,6 +191,46 @@ int get_token(Token *t){
 		break;
 
 		//double
+		case S_INT_DOT:
+
+			if (c >= '0' && c <= '9'){
+				t->type = S_FRAC;
+				return 0;
+			}
+		break;
+
+		case S_FRAC:
+
+			if (c >= '0' && c <= '9'){
+				t->type = S_FRAC;
+				return 0;
+			}
+			else if ((c == 'e') || c == 'E'){
+				t->type = S_EXP;
+				return 0;
+			}
+			else if ((c == 'd') || (c == 'D')){
+				t->type = S_SUFFIX1;
+				return 0;
+			}
+			else if (c == '_'){
+				t->type = S_FRAC_;
+				return 0;
+			}
+		break;
+
+		case S_FRAC_:
+
+			if (c >= '0' && c <= '9'){
+				t->type = S_FRAC;
+				return 0;
+			}
+		break;
+
+		case S_EXP:
+
+		break;
+
 
 
 
