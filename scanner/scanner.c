@@ -169,25 +169,35 @@ int get_token(Token *t){
 		case S_INT:
 
 			if (c >= '0' && c <= '9'){
-				t->type = S_INT;
-				return 0;
+				buf[len++] = c; // stav se nemění, jen se posune buffer;
 			}
 			else if (c == 'e' || c == 'E'){
-				t->type = S_EXP;
-				return 0;
+				buf[len++] = c;
+				state = S_EXP;
 			}
 			else if (c =='_'){
-				t->type = S_INT__;
-				return 0;
+				state = S_INT__;
 			}
+			else if (c == '.') {
+        	buf[len++] = c;
+        	state = S_INT_DOT;
+			}
+			else {    //INT je koncový, token končí
+				ungetc(c, stdin);
+				buf[len] = '\0';
+				t->type = TOKEN_INT;
+				//t->int_value = strtoll(buf, NULL, 10);
+				return 0;
+    		}
 			
 		break;
 
 		case S_INT__:
 			if (c >= '0' && c <= '9'){
-				t->type = S_INT;
-				return 0;
+				 buf[len++] = c;
+        		state = S_INT;
 			}
+			else return 1;
 		break;
 
 		//double
