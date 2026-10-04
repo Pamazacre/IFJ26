@@ -11,9 +11,9 @@ typedef enum {
 
     // tokeny s hodnotou
     TOKEN_ID,
-    TOKEN_INT,
-    TOKEN_DOUBLE,
-    TOKEN_STRING,
+    TOKEN_TYPE_INT,
+    TOKEN_TYPE_DOUBLE,
+    TOKEN_TYPE_STRING,
 
     // klíčová slova
     TOKEN_DEF,
