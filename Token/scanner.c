@@ -76,7 +76,10 @@ int get_token(Token *t){
 					buf[len++] = c;
 					state = S_INT;
 				}
-				else if (c == '0') state = S_INT0;
+				else if (c == '0') {
+    				buf[len++] = c;
+    				state = S_INT0;
+				}
 
 				//DOUBLE 
 				else if (c == '.') state = S_DOUBLE_DOT;
