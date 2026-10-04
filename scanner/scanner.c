@@ -131,6 +131,8 @@ int get_token(Token *t){
 			else return 1;
 		break;
 
+
+		// int
 		case S_INT0:
 
 			if (c == '.'){
@@ -150,6 +152,33 @@ int get_token(Token *t){
 			else return 1; //správně?
 
 		break;
+
+		case S_INT:
+
+			if (c >= '0' && c <= '9'){
+				t->type = S_INT;
+				return 0;
+			}
+			else if (c == 'e' || c == 'E'){
+				t->type = S_EXP;
+				return 0;
+			}
+			else if (c =='_'){
+				t->type = S_INT__;
+				return 0;
+			}
+			
+		break;
+
+		case S_INT__:
+			if (c >= '0' && c <= '9'){
+				t->type = S_INT;
+				return 0;
+			}
+		break;
+
+		//double
+
 
 
 	}
