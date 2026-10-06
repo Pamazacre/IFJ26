@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-
+#include <string.h>
 #include "token.h"
 
 
@@ -12,30 +12,65 @@ static int line = 1;
 typedef enum { // podobně jako v token.h - jedná se o jakousi kolekci VŠECH stavů, do které se může konečný automat dostat
 	    	   //-> místo tedy několik vnořených funkcí bude potom jen jeden velký switch, kde v podstatě jednotlivé stavy budou definovány
 
-	S_START,
-	S_INT0,
-	S_INT,
-	S_INT__,
-	S_EOF,
-	S_DOUBLE_DOT,
-	S_ID,
-	S_AT,
-	S_UNS,
-	S_QFIRST,
-	S_QSEC,
-	S_COMMS,
-	S_ASSIGN,
-	S_EXCLAM,
-	S_L_THAN,
-	S_G_THAN,
-	S_INT_DOT,
-	S_EXP,
-	S_FRAC,
-	S_SUFFIX1,
-	S_FRAC_,
-
-
+	S_START,/*Začátek každého slova - rozřazení do jednoho z pěti základních "stromů"*/
+	S_INT0,/*Číslo začínající 0 -> může to být double / chbya*/
+	S_INT,/*Koncový stav pro INT*/
+	S_INT__,/* Z int -> double*/
+	S_EOF,/* koncový stav pro End of line*/
+	S_DOUBLE_DOT,/* Jeden z koncových stavl pro double*/
+	S_ID,/**/
+	S_AT,/**/
+	S_UNS,/**/
+	S_QFIRST,/**/
+	S_QSEC,/**/
+	S_COMMS,/**/
+	S_ASSIGN,/**/
+	S_EXCLAM,/**/
+	S_L_THAN,/**/
+	S_G_THAN,/**/
+	S_INT_DOT,/**/
+	S_EXP,/**/
+	S_FRAC,/**/
+	S_SUFFIX1,/**/
+	S_FRAC_,/**/
+	S_EXPD,/**/
+	S_EXP_SIGN,/**/
+	S_EXPD_,/**/
+	S_SUFFIX2,/**/
+	S_ML,/**/
+	S_ML_Q1,/**/
+	S_ML_Q2,/**/
+	S_ML_END,/**/
+	S_LC,/**/
+	S_BC,/**/
+	S_BL_S,/**/
+	S_BL_SLASH,/**/
+	S_BL_END,/**/
+	S_ESC,
+	S_STR,
+	S_STR_END,
+	
 }State;
+
+
+
+static TokenType keyword(const char *s){
+	if(strcmp(s,"def") == 0) return TOKEN_DEF;
+	if(strcmp(s,"do") == 0) return TOKEN_DO;
+	if(strcmp(s,"Double") == 0) return TOKEN_TYPE_DOUBLE;
+	if(strcmp(s,"else") == 0) return TOKEN_ELSE;
+	if(strcmp(s,"if") == 0) return TOKEN_IF;
+	if(strcmp(s,"import") == 0) return TOKEN_IMPORT;
+	if(strcmp(s,"Int") == 0) return TOKEN_TYPE_INT;
+	if(strcmp(s,"return") == 0) return TOKEN_RETURN;
+	if(strcmp(s,"String") == 0) return TOKEN_TYPE_STRING;
+	if(strcmp(s,"then") == 0) return TOKEN_THEN;
+	if(strcmp(s,"Unit") == 0) return TOKEN_UNIT;
+	if(strcmp(s,"val") == 0) return TOKEN_VAL;
+	if(strcmp(s,"var") == 0) return TOKEN_VAR;
+	if(strcmp(s,"while") == 0) return TOKEN_WHILE;
+	return TOKEN_ID;
+}
 
 
 int get_token(Token *t){
@@ -82,24 +117,53 @@ int get_token(Token *t){
 				}
 
 				//DOUBLE 
-				else if (c == '.') state = S_DOUBLE_DOT;
+				else if (c == '.') {
+				buf[len++] = c;
+				state = S_DOUBLE_DOT;
+				}
 
 				//Identifikátory + klíčová slova
-				else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) state = S_ID;
-				else if (c == '@') state = S_AT;
-				else if (c == '_') state = S_UNS;
-
+				else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')){ 
+					buf[len++] = c;
+					state = S_ID;
+				}
+				else if (c == '@'){ 
+					buf[len++] = c;
+					state = S_AT;
+				}
+				else if (c == '_') { 
+					buf[len++] = c;
+					state = S_UNS;
+				}
 				//řetězce
-				else if (c == '"') state = S_QFIRST;
+				else if (c == '"'){
+					buf[len++] = c;
+					state = S_QFIRST;
+				}
 
 				//komentáře (a dělení)
-				else if (c == '/') state = S_COMMS;
+				else if (c == '/'){
+					buf[len++] = c;
+					state = S_COMMS;					
+				}
 
 				//operátory, po kterých může přijít druhý znakelk
-				else if (c == '=') state = S_ASSIGN;
-				else if (c == '!') state = S_EXCLAM;
-				else if (c == '<') state = S_L_THAN;
-				else if (c == '>') state = S_G_THAN;
+				else if (c == '='){
+					buf[len++] = c;
+					state = S_ASSIGN;
+				}
+				else if (c == '!'){
+					buf[len++] = c;
+					state = S_EXCLAM;
+				}
+				else if (c == '<'){
+					buf[len++] = c;
+					state = S_L_THAN;
+				}
+				else if (c == '>'){
+					buf[len++] = c;
+					state = S_G_THAN;
+				}
 
 				//koncový stav bez dalších hran, token je hned hotový
 				else if (c == '+'){
@@ -252,8 +316,142 @@ int get_token(Token *t){
 			else return 1;
 			break;
 
+			case S_ID:
+				if((c >= '0' && c <= '9')||((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) || c == '_'){
+					buf[len++] = c;
+				}
+				else{
+					ungetc(c,stdin); //o char zpět
+					buf[len] = '\0'; //ukončení slova
+					t->type = keyword(buf);// TOKEN_WHILE, TOKEN_IF, … nebo TOKEN_ID
+        			if (t->type == TOKEN_ID){ // stačí se opět ukládat jen název tokenu
+            			t->stringValue = malloc(len + 1); // potřebuji si držet název identifikátoru někde jinde než ve statickém bufferu, jinak bych o název přišel - > +1 kvůli "\n"
+            			if (t->stringValue == NULL) return 99; // malloc by pak měl uvolňovat až parser po použití
+           				strcpy(t->stringValue, buf); // vlastní kopie názvu ID do bufferu
+        			}
+        		return 0;
+			}
+			break;
+
+			case S_UNS:
+				if((c >= '0' && c <= '9')||((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) || c == '_'){
+					buf[len++] = c;
+					state = S_ID;
+				}
+				else return 1;
+			break;
+
+			case S_EXP:
+			if(c == '+' || c == '-'){
+				buf[len++] = c;
+				state = S_EXP_SIGN;
+			}
+			else if(c >= '0' && c <= '9'){
+				buf[len++] = c;
+				state = S_EXPD;
+			}
+			else return 1;
+			break;
+
+			case S_EXPD:
+			if(c >= '0' && c <= '9'){
+				buf[len++] = c;
+			}
+			else if(c == 'd' || c == 'D'){
+				buf[len] = '\0';
+				t->type = TOKEN_DOUBLE;
+				t->doubleValue = strtod(buf, NULL);
+				return 0;
+			}
+			else if(c == '_'){
+				state = S_EXPD_;
+			}
+			else{
+				ungetc(c, stdin);
+				buf[len] = '\0';
+				t->type = TOKEN_DOUBLE;
+				t->doubleValue = strtod(buf, NULL);
+				return 0;
+			}
+			break;
+
+			case S_SUFFIX1:
+			printf("není ještě hotovo");		
+			return 1;
+
+			case S_SUFFIX2:
+			printf("není ještě hotovo");		
+			return 1;
+
+			case S_EXP_SIGN:
+			if(c >= '0' && c <= '9'){
+				buf[len++] = c;
+				state = S_EXPD;
+			}
+			else return 1;
+			break;
+
+			case S_EXPD_:
+			if(c >= '0' && c <= '9'){
+				buf[len++] = c;
+				state = S_EXPD;
+			}
+			else return 1;
+			break;
+
+			case S_QFIRST:
+			printf("není ještě hotovo");		
+			return 1;
+
+			case S_QSEC:
+			printf("není ještě hotovo");		
+			return 1;
+
+			case S_ESC:
+			printf("není ještě hotovo");		
+			return 1;
+
+			case S_STR:
+			printf("není ještě hotovo");		
+			return 1;
+
+			case S_STR_END:
+			printf("není ještě hotovo");		
+			return 1;
+
+			case S_ML:
+			printf("není ještě hotovo");		
+			return 1;
+			
+			case S_ML_Q1:
+			printf("není ještě hotovo");		
+			return 1;
+
+			case S_ML_Q2:
+			printf("není ještě hotovo");		
+			return 1;
+
+			case S_ML_END:
+			printf("není ještě hotovo");		
+			return 1;
+
+			case S_BC:
+			printf("není ještě hotovo");		
+			return 1;
+
+			case S_BL_S:
+			printf("není ještě hotovo");		
+			return 1;
+
+			case S_BL_END:
+			printf("není ještě hotovo");		
+			return 1;
+
+			case S_BL_SLASH:
+			printf("není ještě hotovo");		
+			return 1;
+
 			default: return 1;
 		}
 	}
 }
-
