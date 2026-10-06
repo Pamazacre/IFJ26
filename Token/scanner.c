@@ -46,10 +46,10 @@ typedef enum { // podobně jako v token.h - jedná se o jakousi kolekci VŠECH s
 	S_BL_S,/**/
 	S_BL_SLASH,/**/
 	S_BL_END,/**/
+	S_ESC,
+	S_STR,
+	S_STR_END,
 	
-
-
-
 }State;
 
 
@@ -341,23 +341,97 @@ int get_token(Token *t){
 			break;
 
 			case S_EXP:
-			if(c == '_'){
-				buf[line++] = c;
-				state = S_FRAC;
-			}
-			else if(c == 'd' || c == 'D'){
-				buf[line++] = c;
-				state = S_SUFFIX1;
-			}
-			else if(c == 'e' || c == 'E'){
+			if(c == '+' || c == '-'){
 				buf[line++] = c;
 				state = S_EXP;
 			}
-			else if(c >= '0' && c <= '9')
-			
-			
+			else if(c >= '0' && c <= '9'){
+				buf[line++] = c;
+				state = S_EXPD;
+			}
+			else return 0;
 
-			break; 
+			case S_EXPD:
+			if(c >= '0' && c <= '9'){
+				buf[line++] = c;
+			}
+			else if(c == 'd' || c == 'D'){
+				buf[line++] = c;
+				state = S_SUFFIX2;
+			}
+			else if(c == '-'){
+				buf[line++] = c;
+				state = S_EXPD_;
+			}
+			else return 0;
+
+			case S_SUFFIX1:
+			printf("není ještě hotovo");		
+			break;
+
+			case S_SUFFIX2:
+			printf("není ještě hotovo");		
+			break;
+
+			case S_EXP_SIGN:
+			printf("není ještě hotovo");		
+			break;
+
+			case S_EXPD_:
+			printf("není ještě hotovo");		
+			break;
+
+			case S_QFIRST:
+			printf("není ještě hotovo");		
+			break;
+
+			case S_QSEC:
+			printf("není ještě hotovo");		
+			break;
+
+			case S_ESC:
+			printf("není ještě hotovo");		
+			break;
+
+			case S_STR:
+			printf("není ještě hotovo");		
+			break;
+
+			case S_STR_END:
+			printf("není ještě hotovo");		
+			break;
+
+			case S_ML:
+			printf("není ještě hotovo");		
+			break;
+			
+			case S_ML_Q1:
+			printf("není ještě hotovo");		
+			break;
+
+			case S_ML_Q2:
+			printf("není ještě hotovo");		
+			break;
+
+			case S_ML_END:
+			printf("není ještě hotovo");		
+			break;
+
+			case S_BC:
+			printf("není ještě hotovo");		
+			break;
+
+			case S_BL_S:
+			printf("není ještě hotovo");		
+			break;
+
+			case S_BL_END:
+			printf("není ještě hotovo");		
+			break;
+
+			case S_BL_SLASH:
+			printf("není ještě hotovo");		
+			break;
 
 			default: return 1;
 		}
