@@ -97,7 +97,10 @@ int get_token(Token *t){
 				}
 
 				//DOUBLE 
-				else if (c == '.') state = S_DOUBLE_DOT;
+				else if (c == '.') {
+				buf[len++] = c;
+				state = S_DOUBLE_DOT;
+				}
 
 				//Identifikátory + klíčová slova
 				else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')){ 
@@ -111,16 +114,34 @@ int get_token(Token *t){
 					state = S_UNS;
 
 				//řetězce
-				else if (c == '"') state = S_QFIRST;
+				else if (c == '"'){
+					buf[len++] = c;
+					state = S_QFIRST;
+				}
 
 				//komentáře (a dělení)
-				else if (c == '/') state = S_COMMS;
+				else if (c == '/'){
+					buf[len++] = c;
+					state = S_COMMS;					
+				}
 
 				//operátory, po kterých může přijít druhý znakelk
-				else if (c == '=') state = S_ASSIGN;
-				else if (c == '!') state = S_EXCLAM;
-				else if (c == '<') state = S_L_THAN;
-				else if (c == '>') state = S_G_THAN;
+				else if (c == '='){
+					buf[len++] = c;
+					state = S_ASSIGN;
+				}
+				else if (c == '!'){
+					buf[len++] = c;
+					state = S_EXCLAM;
+				}
+				else if (c == '<'){
+					buf[len++] = c;
+					state = S_L_THAN;
+				}
+				else if (c == '>'){
+					buf[len++] = c;
+					state = S_G_THAN;
+				}
 
 				//koncový stav bez dalších hran, token je hned hotový
 				else if (c == '+'){
