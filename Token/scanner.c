@@ -52,6 +52,39 @@ typedef enum { // podobně jako v token.h - jedná se o jakousi kolekci VŠECH s
 
 }State;
 
+TOKEN_DEF,
+    TOKEN_DO,
+    TOKEN_DOUBLE,
+    TOKEN_ELSE,
+    TOKEN_IF,
+    TOKEN_IMPORT,
+    TOKEN_INT,
+    TOKEN_RETURN,
+    TOKEN_STRING,
+    TOKEN_THEN,
+    TOKEN_UNIT,
+    TOKEN_VAL,
+    TOKEN_VAR,
+    TOKEN_WHILE,
+
+
+static TokenType keyword(const char *s){
+	if(strcmp(s,"def") == 0) return TOKEN_DEF;
+	if(strcmp(s,"do") == 0) return TOKEN_DO;
+	if(strcmp(s,"double") == 0) return TOKEN_DOUBLE,;
+	if(strcmp(s,"else") == 0) return TOKEN_ELSE;
+	if(strcmp(s,"if") == 0) return TOKEN_IF;
+	if(strcmp(s,"import") == 0) return TOKEN_IMPORT;
+	if(strcmp(s,"int") == 0) return TOKEN_INT;
+	if(strcmp(s,"return") == 0) return TOKEN_RETURN;
+	if(strcmp(s,"string") == 0) return TOKEN_STRING;
+	if(strcmp(s,"then") == 0) return TOKEN_THEN;
+	if(strcmp(s,"unit") == 0) return TOKEN_UNIT;
+	if(strcmp(s,"val") == 0) return TOKEN_VAL;
+	if(strcmp(s,"var") == 0) return TOKEN_VAR;
+	if(strcmp(s,"while") == 0) return TOKEN_WHILE;
+}tokenType;
+
 
 int get_token(Token *t){
 
