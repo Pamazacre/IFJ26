@@ -31,7 +31,7 @@ typedef enum {
     TOKEN_VAR,
     TOKEN_WHILE,
 
-    // rezervovaná slova z rozšíření
+    // rezervovaná slova z rozšíření -> zatím jen zakázat jejich používání jako identifkátory
     TOKEN_RESERVED,
 
     // anotace
@@ -43,19 +43,19 @@ typedef enum {
     TOKEN_MUL,
     TOKEN_DIV,
     TOKEN_ASSIGN,
-    TOKEN_EQ,
-    TOKEN_NEQ,
-    TOKEN_LT,
-    TOKEN_LE,
-    TOKEN_GT,
-    TOKEN_GE,
+    TOKEN_EQ,  /*larger equal*/
+    TOKEN_NEQ,  /*not equal*/
+    TOKEN_LT, /*lesser than*/
+    TOKEN_LE, /*lesser or equal*/
+    TOKEN_GT,  /*greater than*/
+    TOKEN_GE,  /*larger or equal*/
 
     // oddělovače
     TOKEN_LPAR,
     TOKEN_RPAR,
     TOKEN_COMMA,
-    TOKEN_COLON,
-    TOKEN_SEMICOLON,
+    TOKEN_COLON,  /* : */
+    TOKEN_SEMICOLON,  /* ; */
     TOKEN_DOT,
 
 } TokenType;
@@ -68,6 +68,8 @@ typedef struct { // sem dát všechny možné prvky, které jakýkoliv token pot
     char *stringValue;
     int line; //chybové hlášky
 }Token;
+
+
 
 
 
