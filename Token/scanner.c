@@ -100,9 +100,15 @@ int get_token(Token *t){
 				else if (c == '.') state = S_DOUBLE_DOT;
 
 				//Identifikátory + klíčová slova
-				else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) state = S_ID;
-				else if (c == '@') state = S_AT;
-				else if (c == '_') state = S_UNS;
+				else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')){ 
+					buf[len++] = c;
+					state = S_ID;
+				else if (c == '@'){ 
+					buf[len++] = c;
+					state = S_AT;
+				else if (c == '_') { 
+					buf[len++] = c;
+					state = S_UNS;
 
 				//řetězce
 				else if (c == '"') state = S_QFIRST;
