@@ -83,7 +83,7 @@ static TokenType keyword(const char *s){
 	if(strcmp(s,"val") == 0) return TOKEN_VAL;
 	if(strcmp(s,"var") == 0) return TOKEN_VAR;
 	if(strcmp(s,"while") == 0) return TOKEN_WHILE;
-}tokenType;
+}
 
 
 int get_token(Token *t){
