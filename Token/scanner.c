@@ -12,27 +12,42 @@ static int line = 1;
 typedef enum { // podobně jako v token.h - jedná se o jakousi kolekci VŠECH stavů, do které se může konečný automat dostat
 	    	   //-> místo tedy několik vnořených funkcí bude potom jen jeden velký switch, kde v podstatě jednotlivé stavy budou definovány
 
-	S_START,
-	S_INT0,
-	S_INT,
-	S_INT__,
-	S_EOF,
-	S_DOUBLE_DOT,
-	S_ID,
-	S_AT,
-	S_UNS,
-	S_QFIRST,
-	S_QSEC,
-	S_COMMS,
-	S_ASSIGN,
-	S_EXCLAM,
-	S_L_THAN,
-	S_G_THAN,
-	S_INT_DOT,
-	S_EXP,
-	S_FRAC,
-	S_SUFFIX1,
-	S_FRAC_,
+	S_START,/*Začátek každého slova - rozřazení do jednoho z pěti základních "stromů"*/
+	S_INT0,/*Číslo začínající 0 -> může to být double / chbya*/
+	S_INT,/*Koncový stav pro INT*/
+	S_INT__,/* Z int -> double*/
+	S_EOF,/* koncový stav pro End of line*/
+	S_DOUBLE_DOT,/* Jeden z koncových stavl pro double*/
+	S_ID,/**/
+	S_AT,/**/
+	S_UNS,/**/
+	S_QFIRST,/**/
+	S_QSEC,/**/
+	S_COMMS,/**/
+	S_ASSIGN,/**/
+	S_EXCLAM,/**/
+	S_L_THAN,/**/
+	S_G_THAN,/**/
+	S_INT_DOT,/**/
+	S_EXP,/**/
+	S_FRAC,/**/
+	S_SUFFIX1,/**/
+	S_FRAC_,/**/
+	S_EXPD,/**/
+	S_EXP_SIGN,/**/
+	S_EXPD_,/**/
+	S_SUFFIX2,/**/
+	S_ML,/**/
+	S_ML_Q1,/**/
+	S_ML_Q2,/**/
+	S_ML_END,/**/
+	S_LC,/**/
+	S_BC,/**/
+	S_BL_S,/**/
+	S_BL_SLASH,/**/
+	S_BL_END,/**/
+	
+
 
 
 }State;
