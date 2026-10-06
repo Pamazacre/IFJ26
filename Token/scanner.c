@@ -52,26 +52,12 @@ typedef enum { // podobně jako v token.h - jedná se o jakousi kolekci VŠECH s
 
 }State;
 
-TOKEN_DEF,
-    TOKEN_DO,
-    TOKEN_DOUBLE,
-    TOKEN_ELSE,
-    TOKEN_IF,
-    TOKEN_IMPORT,
-    TOKEN_INT,
-    TOKEN_RETURN,
-    TOKEN_STRING,
-    TOKEN_THEN,
-    TOKEN_UNIT,
-    TOKEN_VAL,
-    TOKEN_VAR,
-    TOKEN_WHILE,
 
 
 static TokenType keyword(const char *s){
 	if(strcmp(s,"def") == 0) return TOKEN_DEF;
 	if(strcmp(s,"do") == 0) return TOKEN_DO;
-	if(strcmp(s,"double") == 0) return TOKEN_DOUBLE,;
+	if(strcmp(s,"double") == 0) return TOKEN_DOUBLE;
 	if(strcmp(s,"else") == 0) return TOKEN_ELSE;
 	if(strcmp(s,"if") == 0) return TOKEN_IF;
 	if(strcmp(s,"import") == 0) return TOKEN_IMPORT;
@@ -139,13 +125,15 @@ int get_token(Token *t){
 				else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')){ 
 					buf[len++] = c;
 					state = S_ID;
+				}
 				else if (c == '@'){ 
 					buf[len++] = c;
 					state = S_AT;
+				}
 				else if (c == '_') { 
 					buf[len++] = c;
 					state = S_UNS;
-
+				}
 				//řetězce
 				else if (c == '"'){
 					buf[len++] = c;
@@ -332,10 +320,44 @@ int get_token(Token *t){
 					buf[len++] = c;
 				}
 				else{
-					ungetc(c,stdin);
-					buf[len] = '\n'; 
-					
+					ungetc(c,stdin); //o char zpět
+					buf[len] = '\n'; //ukončení slova
+					t->type = keyword(buf);// TOKEN_WHILE, TOKEN_IF, … nebo TOKEN_ID
+        			if (t->type == TOKEN_ID){ // stačí se opět ukládat jen název tokenu
+            			t->stringValue = malloc(len + 1); // potřebuji si držet název identifikátoru někde jinde než ve statickém bufferu, jinak bych o název přišel - > +1 kvůli "\n"
+            			if (t->stringValue == NULL) return 1; // malloc by pak měl uvolňovat až parser po použití
+           				strcpy(t->stringValue, buf); // vlastní kopie názvu ID do bufferu
+        			}
+        		return 0;
+			}
+			break;
+
+			case S_UNS:
+				if((c >= '0' && c <= '9')||((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))){
+					buf[len++] = c;
+					state = S_ID;
 				}
+				else return 1;
+			break;
+
+			case S_EXP:
+			if(c == '_'){
+				buf[line++] = c;
+				state = S_FRAC;
+			}
+			else if(c == 'd' || c == 'D'){
+				buf[line++] = c;
+				state = S_SUFFIX1;
+			}
+			else if(c == 'e' || c == 'E'){
+				buf[line++] = c;
+				state = S_EXP;
+			}
+			else if(c >= '0' && c <= '9')
+			
+			
+
+			break; 
 
 			default: return 1;
 		}
