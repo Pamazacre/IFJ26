@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-
+#include <string.h>
 #include "token.h"
 
 
@@ -266,6 +266,16 @@ int get_token(Token *t){
 				}
 			else return 1;
 			break;
+
+			case S_ID:
+				if((c >= '0' && c <= '9')||((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))){
+					buf[len++] = c;
+				}
+				else{
+					ungetc(c,stdin);
+					buf[len] = '\n'; 
+					
+				}
 
 			default: return 1;
 		}
