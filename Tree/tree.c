@@ -2,7 +2,8 @@
 #include <string.h>
 #include <stdio.h>
 
-typedef enum{
+typedef enum
+{
   N_NUM,
   N_VAR,
   N_BINOP,
@@ -12,56 +13,149 @@ typedef enum{
   N_BLOCK
 } NodeKind;
 
-typedef enum{
+typedef enum
+{
   D_INT,
   D_FLOAT,
-  D_CHAR,
   D_STRING,
-  D_NULL,
+  D_BOOL,
   D_UNKNOWN
 } DataType;
 
+// Parametry pro funkce
+typedef struct
+{
+  char *name;
+  DataType type;
+} Param;
+
 typedef struct Node Node;
-struct Node{
+struct Node
+{
   NodeKind kind;
   int line;
   DataType dataType;
-  union{
-    struct{
-      int value;
-    } num;
-    struct{
+
+  union
+  {
+    struct
+    {
+      Node **funcs;
+      int count;
+    } program;
+    struct
+    {
       char *name;
-    } var;
-    struct{
+      Param *params;
+      int nparams;
+      DataType ret;
+      Node *body;
+      int is_main;
+    } func;
+    struct
+    {
+      char *name;
+      int is_mutable;
+      DataType declared;
+      Node *init;
+    } vardef;
+    struct
+    {
+      char *name;
+      Node **args;
+      int nargs;
+    } call;
+    struct
+    {
+      Node *value;
+    } ret; // parse done
+    struct
+    {
+      int value;
+    } num; // parse done
+    struct
+    {
+      char *name;
+    } var; // parse done
+    struct
+    {
       char op;
       Node *l, *r;
-    } binop;
-    struct{
+    } binop; // parse done
+    struct
+    {
       char *name;
       Node *value;
-    } assign;
-    struct{
+    } assign; // parse done
+    struct
+    {
       Node *cond, *then_b, *else_b;
-    } if_;
-    struct{
+    } if_; // parse done
+    struct
+    {
       Node *cond, *body;
-    } while_;
-    struct{
+    } while_; // parse done
+    struct
+    {
       Node **stmts;
       int count;
-    } block;
+    } block; // parse done
   } as;
 };
 
-Node *new_node(NodeKind k, int line){
+Node *new_node(NodeKind k, int line)
+{
   Node *n = calloc(1, sizeof *n);
   n->kind = k;
   n->line = line;
   return n;
 }
 
-Node *node_if(Node *cond, Node *then_b, Node *else_b, int line)
+void block_add(Node *blk, Node *stmt)
+{
+  blk->as.block.stmts = realloc(blk->as.block.stmts, (blk->as.block.count + 1) * sizeof(Node *));
+  blk->as.block.stmts[blk->as.block.count++] = stmt;
+}
+
+Node *parse_binop(Node *left, Node *right, char op, int line)
+{
+  Node *n = new_node(N_BINOP, line);
+  n->as.binop.l = left;
+  n->as.binop.r = right;
+  n->as.binop.op = op;
+  return n;
+}
+
+Node *parse_return(Node *value, int line)
+{
+  Node *n = new_node(N_VAR, line);
+  n->as.ret.value = value;
+  return n;
+}
+
+Node *parse_var(char *name, int line)
+{
+  Node *n = new_node(N_VAR, line);
+  n->as.var.name = name;
+  return n;
+}
+
+Node *parse_num(int value, int line)
+{
+  Node *n = new_node(N_NUM, line);
+  n->as.num.value = value;
+  return n;
+}
+
+Node *parse_assign(char *name, Node *value, int line)
+{
+  Node *n = new_node(N_ASSIGN, line);
+  n->as.assign.name = name;
+  n->as.assign.value = value;
+  return n;
+}
+
+Node *parse_if(Node *cond, Node *then_b, Node *else_b, int line)
 {
   Node *n = new_node(N_IF, line);
   n->as.if_.cond = cond;
@@ -70,7 +164,8 @@ Node *node_if(Node *cond, Node *then_b, Node *else_b, int line)
   return n;
 }
 
-Node *make_while(Node *cond, Node *body, int line){
+Node *parse_while(Node *cond, Node *body, int line)
+{
   Node *n = new_node(N_WHILE, line);
   n->as.while_.cond = cond;
   n->as.while_.body = body;
