@@ -1,0 +1,299 @@
+% =====================================================================
+%  Dokumentace k projektu IFJ – šablona
+%  Překlad:  pdflatex dokumentace.tex  (2× kvůli odkazům)
+%            nebo: latexmk -pdf dokumentace.tex
+% =====================================================================
+\documentclass[a4paper,11pt]{article}
+
+% --- Kódování, jazyk, písmo -------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[czech]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% --- Sazba stránky ----------------------------------------------------
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{parskip}               % odstavce oddělené mezerou, bez odsazení
+
+% --- Tabulky, grafika, diagramy ---------------------------------------
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{pdflscape}
+\usepackage{adjustbox}           % zmenšení širokých tabulek jen když je potřeba             % otočené stránky pro velké tabulky
+\usepackage[table]{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{automata,positioning,arrows.meta,shapes.geometric,fit,babel}
+\usepackage{float}
+\usepackage{caption}
+
+% --- Ostatní ----------------------------------------------------------
+\usepackage{enumitem}
+\setlist{nosep}
+\usepackage{xspace}
+\usepackage[hidelinks]{hyperref}
+\usepackage{url}
+
+% --- Vlastní makra ----------------------------------------------------
+\newcommand{\id}[1]{\texttt{#1}}       % identifikátory pevnou šířkou
+\newcommand{\nt}[1]{\ensuremath{\langle\mathit{#1}\rangle}} % neterminál
+\newcommand{\term}[1]{\texttt{#1}}     % terminál
+\newcommand{\TODO}[1]{\textcolor{red}{\textbf{TODO:} #1}}
+
+% =====================================================================
+\begin{document}
+
+% ---------------------------------------------------------------------
+%  TITULNÍ STRANA
+% ---------------------------------------------------------------------
+\begin{titlepage}
+  \centering
+  {\Large Vysoké učení technické v~Brně\par}
+  {\large Fakulta informačních technologií\par}
+  \vspace{3cm}
+  {\Huge\bfseries Dokumentace k projektu IFJ\par}
+  \vspace{0.5cm}
+  {\Large Implementace překladače imperativního jazyka IFJ2026\par}
+  \vspace{2cm}
+
+  {\large {xlogin00 vedoucího}, varianta \textbf{TRP-izp}\par}
+  \vspace{1.5cm}
+
+  % Vedoucí týmu tučně!
+  \begin{tabular}{l l r r}
+    \toprule
+    \textbf{Pavel Šenkýř} & \textbf{Login} & \textbf{Osobní číslo} & \textbf{Body} \\
+    \midrule
+    \textbf{Matyáš Němeček} & \textbf{\id{xnemecm00}} & \textbf{\TODO{}} & \textbf{25\,\%} \\
+    \TODO{Jméno Příjmení}   & \id{xlogin00}           & \TODO{}          & 25\,\% \\
+    \TODO{Jméno Příjmení}   & \id{xlogin00}           & \TODO{}          & 25\,\% \\
+    \TODO{Jméno Příjmení}   & \id{xlogin00}           & \TODO{}          & 25\,\% \\
+    \bottomrule
+  \end{tabular}
+
+  \vspace{1.5cm}
+  \begin{tabular}{r l}
+    Implementovaná rozšíření: & \id{\TODO{ROZ1}}, \id{\TODO{ROZ2}} \\
+    Git repozitář:            & \url{https://github.com/Pamazacre/IFJ26} \\
+  \end{tabular}
+
+  \vfill
+  {\large \today\par}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ---------------------------------------------------------------------
+\section{Práce v týmu}
+% ---------------------------------------------------------------------
+
+\subsection{Rozdělení práce}
+\begin{itemize}
+  \item \textbf{Matyáš Němeček} (vedoucí) -- lexikální analyzátor (\id{scanner.c}), \TODO{}
+  \item \textbf{\TODO{Jméno}} -- syntaktický analyzátor (rekurzivní sestup), \TODO{}
+  \item \textbf{\TODO{Jméno}} -- precedenční analýza výrazů, \TODO{}
+  \item \textbf{\TODO{Jméno}} -- sémantická analýza, generátor kódu, \TODO{}
+\end{itemize}
+
+% Povinné, pokud body nejsou rozděleny rovnoměrně:
+\paragraph{Zdůvodnění odchylek od rovnoměrného rozdělení bodů.}
+\TODO{Body jsou rozděleny rovnoměrně / zdůvodnění.}
+
+\subsection{Spolupráce a code review}
+\begin{itemize}
+  \item Vývoj ve větvích, začlenění do \id{main} pouze přes pull request.
+  \item Každý PR schvaluje alespoň \TODO{jeden} další člen týmu; \TODO{}.
+  \item Komunikace: \TODO{Discord, pravidelné schůzky\,\dots}
+\end{itemize}
+
+\subsection{Testování}
+\begin{itemize}
+  \item Jednotkové testy modulů (\TODO{framework}).
+  \item Integrační testy: sada vstupních programů s~očekávaným výstupem a návratovým kódem.
+  \item \TODO{CI, kontrola paměti nástrojem \id{valgrind}\,\dots}
+\end{itemize}
+
+\subsection{Styl formátování kódu}
+\TODO{Např. \id{clang-format} s~konfigurací \id{.clang-format} založenou na stylu \id{LLVM}, odsazení 4 mezery.}
+
+% ---------------------------------------------------------------------
+\section{Architektura překladače}
+% ---------------------------------------------------------------------
+Obrázek~\ref{fig:arch} zobrazuje moduly překladače a datové toky mezi nimi.
+\TODO{Textový popis: vstup (zdrojový kód na \id{stdin}), výstup (\TODO{cílový kód} na \id{stdout},
+návratový kód), význam komponent a struktury, které si předávají.}
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[
+      node distance=1.0cm and 1.5cm,
+      mod/.style={draw, rounded corners, thick, minimum width=2.7cm,
+                  minimum height=1cm, align=center, fill=blue!8},
+      data/.style={draw, dashed, minimum width=2.2cm, minimum height=0.8cm,
+                   align=center, fill=gray!10},
+      flow/.style={-{Stealth[length=3mm]}, thick},
+      lbl/.style={font=\small\itshape, midway}
+    ]
+    \node[data] (src)  {zdrojový kód\\(\id{stdin})};
+    \node[mod, right=of src]  (lex) {lexikální\\analyzátor};
+    \node[mod, right=of lex]  (par) {syntaktický\\analyzátor};
+    \node[mod, below=1.6cm of par] (expr) {precedenční\\analýza výrazů};
+    \node[mod, right=of par]  (sem) {sémantická\\analýza};
+    \node[mod, below=1.6cm of sem] (gen) {generátor\\kódu};
+    \node[data, below=1.4cm of gen] (out) {cílový kód\\(\id{stdout})};
+    \node[mod, fill=orange!12, below=1.6cm of lex] (sym) {tabulka symbolů\\(TRP-izp)};
+
+    \draw[flow] (src) -- node[lbl, above] {znaky} (lex);
+    \draw[flow] (lex) -- node[lbl, above] {tokeny} (par);
+    \draw[flow, <->] (par) -- node[lbl, right] {tokeny / AST} (expr);
+    \draw[flow] (par) -- node[lbl, above] {AST} (sem);
+    \draw[flow] (sem) -- node[lbl, right] {AST} (gen);
+    \draw[flow] (gen) -- (out);
+    \draw[flow, <->, dashed] (sym) -- (par);
+    \draw[flow, <->, dashed] (sym.south) |- ++(0,-0.6) -| (sem.south west);
+  \end{tikzpicture}
+  \caption{Blokové schéma architektury překladače \TODO{upravit dle skutečnosti}}
+  \label{fig:arch}
+\end{figure}
+
+% ---------------------------------------------------------------------
+\section{Lexikální analýza}
+% ---------------------------------------------------------------------
+Lexikální analyzátor je implementován jako deterministický konečný automat
+(obr.~\ref{fig:fsm}). \TODO{Popis odchylek od standardního modelu KA, např. dopředné čtení,
+rozpoznání klíčových slov až v~koncovém stavu identifikátoru.}
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[
+      ->, >={Stealth[length=2.5mm]}, auto, node distance=2.4cm, thick,
+      every state/.style={minimum size=1.1cm, font=\small}
+    ]
+    \node[state, initial]   (S)  {Start};
+    \node[state, accepting, right=of S] (ID) {ID};
+    \node[state, accepting, below=of S] (INT) {Int};
+    \node[state, right=of INT] (DOT) {Dot};
+    \node[state, accepting, right=of DOT] (FL) {Float};
+
+    \path (S)   edge node {\term{a-z, A-Z, \_}} (ID)
+          (ID)  edge[loop above] node {\term{a-z, A-Z, 0-9, \_}} (ID)
+          (S)   edge node[swap] {\term{0-9}} (INT)
+          (INT) edge[loop left] node {\term{0-9}} (INT)
+          (INT) edge node {\term{.}} (DOT)
+          (DOT) edge node {\term{0-9}} (FL)
+          (FL)  edge[loop above] node {\term{0-9}} (FL);
+  \end{tikzpicture}
+  \caption{Diagram konečného automatu lexikálního analyzátoru \TODO{doplnit celý}}
+  \label{fig:fsm}
+\end{figure}
+% Tip: velký automat lze nakreslit v draw.io / JFLAP, exportovat do PDF a vložit:
+% \includegraphics[width=\textwidth]{img/fsm.pdf}
+
+% ---------------------------------------------------------------------
+\section{Syntaktická analýza}
+% ---------------------------------------------------------------------
+Syntaktický analyzátor je implementován rekurzivním sestupem podle LL(1) gramatiky
+(tab.~\ref{tab:grammar}), výrazy zpracovává precedenční syntaktická analýza
+(tab.~\ref{tab:prec}).
+
+\subsection{LL gramatika}
+\begin{longtable}{r l c l}
+  \caption{LL(1) gramatika \TODO{}}\label{tab:grammar}\\
+  \toprule
+  \# & \multicolumn{3}{l}{Pravidlo}\\
+  \midrule
+  \endfirsthead
+  \toprule
+  \# & \multicolumn{3}{l}{Pravidlo}\\
+  \midrule
+  \endhead
+  1 & \nt{prog}      & $\rightarrow$ & \nt{prolog} \nt{func\_list} \term{EOF} \\
+  2 & \nt{func\_list} & $\rightarrow$ & \nt{func} \nt{func\_list} \\
+  3 & \nt{func\_list} & $\rightarrow$ & $\varepsilon$ \\
+  4 & \nt{stmt}      & $\rightarrow$ & \term{id} \term{=} \nt{expr} \term{EOL} \\
+  % ... doplnit
+  \bottomrule
+\end{longtable}
+
+\subsection{LL tabulka}
+% Široká tabulka je na otočené stránce; adjustbox ji zmenší jen pokud se nevejde.
+% Pokud se vejde na výšku, prostředí landscape stačí smazat.
+\begin{landscape}
+\begin{table}[p]
+  \centering
+  \caption{LL tabulka (v~buňkách čísla pravidel z~tab.~\ref{tab:grammar}) \TODO{}}
+  \label{tab:ll}
+  \begin{adjustbox}{max width=\linewidth}
+  \begin{tabular}{|l|*{8}{c|}}
+    \hline
+    & \term{id} & \term{(} & \term{)} & \term{=} & \term{if} & \term{while} & \term{EOL} & \term{EOF} \\
+    \hline
+    \nt{prog}       &   &   &   &   &   &   &   & 1 \\ \hline
+    \nt{func\_list} & 2 &   &   &   &   &   &   & 3 \\ \hline
+    \nt{stmt}       & 4 &   &   &   &   &   &   &   \\ \hline
+  \end{tabular}
+  \end{adjustbox}
+\end{table}
+\end{landscape}
+
+\subsection{Precedenční tabulka}
+\begin{table}[H]
+  \centering
+  \caption{Precedenční tabulka pro výrazy \TODO{}}
+  \label{tab:prec}
+  \begin{tabular}{|c|*{7}{c|}}
+    \hline
+    & \term{+-} & \term{*/} & \term{rel} & \term{(} & \term{)} & \term{i} & \term{\$} \\ \hline
+    \term{+-}  & $>$ & $<$ & $>$ & $<$ & $>$ & $<$ & $>$ \\ \hline
+    \term{*/}  & $>$ & $>$ & $>$ & $<$ & $>$ & $<$ & $>$ \\ \hline
+    \term{rel} & $<$ & $<$ &     & $<$ & $>$ & $<$ & $>$ \\ \hline
+    \term{(}   & $<$ & $<$ & $<$ & $<$ & $=$ & $<$ &     \\ \hline
+    \term{)}   & $>$ & $>$ & $>$ &     & $>$ &     & $>$ \\ \hline
+    \term{i}   & $>$ & $>$ & $>$ &     & $>$ &     & $>$ \\ \hline
+    \term{\$}  & $<$ & $<$ & $<$ & $<$ &     & $<$ &     \\ \hline
+  \end{tabular}
+\end{table}
+
+% ---------------------------------------------------------------------
+\section{Popis modulů}
+% ---------------------------------------------------------------------
+\begin{description}[style=nextline]
+  \item[\id{main.c}] \TODO{Vstupní bod, propojení modulů a předání návratového kódu.}
+  \item[\id{scanner.c/h}] \TODO{Konečný automat převádějící vstup na tokeny.}
+  \item[\id{parser.c/h}] \TODO{Rekurzivní sestup, stavba AST.}
+  \item[\id{expr.c/h}] \TODO{Precedenční analýza výrazů nad zásobníkem.}
+  \item[\id{symtable.c/h}] \TODO{Tabulka s~rozptýlenými položkami s~otevřenou adresací
+        (varianta TRP-izp); rozptylovací funkce \dots, řešení kolizí \dots}
+  \item[\id{semantic.c/h}] \TODO{Typová kontrola, kontrola definic\,\dots}
+  \item[\id{codegen.c/h}] \TODO{Generování cílového kódu z~AST.}
+  \item[\id{error.c/h}] \TODO{Jednotné hlášení chyb a návratové kódy.}
+\end{description}
+
+% ---------------------------------------------------------------------
+\section{Využití prostředků AI}
+% ---------------------------------------------------------------------
+\TODO{Které nástroje, k~čemu (např. návrh testů, revize textu dokumentace), v~jakém rozsahu
+a jak byly výstupy ověřeny. Pokud AI nebyla využita, uveďte to.}
+
+% ---------------------------------------------------------------------
+%  CITACE
+% ---------------------------------------------------------------------
+\renewcommand{\refname}{Literatura}
+\begin{thebibliography}{9}
+\addcontentsline{toc}{section}{\refname}
+  \bibitem{ial}
+    \TODO{Autor}. \emph{Algoritmy (IAL) -- přednáškové opory: Tabulky s~rozptýlenými položkami}.
+    Brno: VUT FIT, \TODO{rok}.
+  \bibitem{ifj}
+    \TODO{Autor}. \emph{Formální jazyky a překladače (IFJ) -- přednášky}. Brno: VUT FIT, \TODO{rok}.
+  \bibitem{hash}
+    \TODO{Autor}. \emph{Název zdroje rozptylovací funkce} [online]. \TODO{rok}.
+    Dostupné z:~\url{https://TODO}
+\end{thebibliography}
+
+\end{document}
