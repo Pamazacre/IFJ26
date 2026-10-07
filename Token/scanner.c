@@ -31,12 +31,11 @@ typedef enum { // podobně jako v token.h - jedná se o jakousi kolekci VŠECH s
 	S_INT_DOT,/**/
 	S_EXP,/**/
 	S_FRAC,/**/
-	S_SUFFIX1,/**/
+	S_SUFFIX,/**/
 	S_FRAC_,/**/
 	S_EXPD,/**/
 	S_EXP_SIGN,/**/
 	S_EXPD_,/**/
-	S_SUFFIX2,/**/
 	S_ML,/**/
 	S_ML_Q1,/**/
 	S_ML_Q2,/**/
@@ -375,11 +374,7 @@ int get_token(Token *t){
 			}
 			break;
 
-			case S_SUFFIX1:
-			printf("není ještě hotovo");		
-			return 1;
-
-			case S_SUFFIX2:
+			case S_SUFFIX:
 			printf("není ještě hotovo");		
 			return 1;
 
@@ -400,16 +395,28 @@ int get_token(Token *t){
 			break;
 
 			case S_QFIRST:
-			printf("není ještě hotovo");		
-			return 1;
+			if(c == 'c'){
+				buf[len++] = c;
+				state = S_STR;
+			}
+			else if(c == ' " '){
+				buf[len++] = c;
+				state = S_QSEC;
+			}
+			/*else if(c == "\"){ //jak napsat se rovná \? 
+				
+			}*/
+			else return 1;
+			break;
 
 			case S_QSEC:
 			printf("není ještě hotovo");		
 			return 1;
 
 			case S_ESC:
-			printf("není ještě hotovo");		
-			return 1;
+			printf("není ještě hotovo");
+			break
+			else return 1;
 
 			case S_STR:
 			printf("není ještě hotovo");		
