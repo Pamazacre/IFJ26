@@ -5,58 +5,59 @@
 typedef enum {
     // odsazení, konec řádků atd.
     TOKEN_EOF,
-    TOKEN_EOL,
-    TOKEN_INDENT,
-    TOKEN_DEDENT,
+    TOKEN_EOL,            // end of line
+    TOKEN_INDENT,         // Odsazení - tabulátor/mezery
+    TOKEN_DEDENT,         // Indent, ale v rámci víceřádkových textových řetězců
 
-    // tokeny s hodnotou
-    TOKEN_ID,
-    TOKEN_TYPE_INT,
-    TOKEN_TYPE_DOUBLE,
-    TOKEN_TYPE_STRING,
+    
+    TOKEN_STRING,         // hodnota typu string - char znackaAuta[] = {"BMW"} <- tohle je hodnota stringu
+            
+    TOKEN_TYPE_INT,       // název typu -> "int"
+    TOKEN_TYPE_DOUBLE,    // název typu -> "double"
+    TOKEN_TYPE_STRING,    // název typu -> "string"
 
     // klíčová slova
-    TOKEN_DEF,
-    TOKEN_DO,
-    TOKEN_DOUBLE,
-    TOKEN_ELSE,
-    TOKEN_IF,
-    TOKEN_IMPORT,
-    TOKEN_INT,
-    TOKEN_RETURN,
-    TOKEN_STRING,
-    TOKEN_THEN,
-    TOKEN_UNIT,
-    TOKEN_VAL,
-    TOKEN_VAR,
-    TOKEN_WHILE,
+    TOKEN_DEF,            // KLíčové slovo: def
+    TOKEN_DO,             // KLíčové slovo: do
+    TOKEN_DOUBLE,         // KLíčové slovo: double - > toto je hodnota typu double
+    TOKEN_ELSE,           // KLíčové slovo: else
+    TOKEN_IF,             // KLíčové slovo: if
+    TOKEN_IMPORT,         // KLíčové slovo: import
+    TOKEN_INT,            // KLíčové slovo: int -> opět hodnota typu int
+    TOKEN_RETURN,         // KLíčové slovo: return
+    TOKEN_ID,             // KLíčové slovo: ID -> identifikátor -> NÁZEV jakéhokoliv identifikátoru = char znackaAuta <- název identifikátoru
+    TOKEN_THEN,           // KLíčové slovo: then
+    TOKEN_UNIT,           // KLíčové slovo: unit
+    TOKEN_VAL,            // KLíčové slovo: val
+    TOKEN_VAR,            // KLíčové slovo: var
+    TOKEN_WHILE,          // KLíčové slovo: while
 
     // rezervovaná slova z rozšíření -> zatím jen zakázat jejich používání jako identifkátory
-    TOKEN_RESERVED,
+    TOKEN_RESERVED,  
 
     // anotace
-    TOKEN_AT_MAIN,// @main
+    TOKEN_AT_MAIN,        // @main
 
     // operátory
-    TOKEN_PLUS,
-    TOKEN_MINUS,
-    TOKEN_MUL,
-    TOKEN_DIV,
-    TOKEN_ASSIGN,
-    TOKEN_EQ,  /*larger equal*/
-    TOKEN_NEQ,  /*not equal*/
-    TOKEN_LT, /*lesser than*/
-    TOKEN_LE, /*lesser or equal*/
-    TOKEN_GT,  /*greater than*/
-    TOKEN_GE,  /*larger or equal*/
+    TOKEN_PLUS,           // KLíčové slovo: +
+    TOKEN_MINUS,          // KLíčové slovo: -
+    TOKEN_MUL,            // KLíčové slovo: *
+    TOKEN_DIV,            // KLíčové slovo: /
+    TOKEN_ASSIGN,         // KLíčové slovo: =
+    TOKEN_EQ,             // Klíčové slovo: ==
+    TOKEN_NEQ,            // Klíčové slovo: !=
+    TOKEN_LT,             // KLíčové slovo: <
+    TOKEN_LE,             // Klíčové slovo: <=
+    TOKEN_GT,             // Klíčové slovo: >
+    TOKEN_GE,             // KLíčové slovo: >=
 
     // oddělovače
-    TOKEN_LPAR,
-    TOKEN_RPAR,
-    TOKEN_COMMA,
-    TOKEN_COLON,  /* : */
-    TOKEN_SEMICOLON,  /* ; */
-    TOKEN_DOT,
+    TOKEN_LPAR,           // KLíčové slovo: (
+    TOKEN_RPAR,           // KLíčové slovo: )
+    TOKEN_COMMA,          // KLíčové slovo: "
+    TOKEN_COLON,          // KLíčové slovo: :
+    TOKEN_SEMICOLON,      // KLíčové slovo: ;
+    TOKEN_DOT,            // KLíčové slovo: .
 
 } TokenType;
 
