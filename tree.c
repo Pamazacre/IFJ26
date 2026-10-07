@@ -15,11 +15,17 @@ typedef enum{
 typedef enum{
   D_INT,
   D_FLOAT,
-  D_CHAR,
   D_STRING,
-  D_NULL,
+  D_BOOL,
   D_UNKNOWN
 } DataType;
+
+// Parametry pro funkce
+typedef struct
+{
+  char *name;
+  DataType type;
+} Param;
 
 typedef struct Node Node;
 struct Node{
@@ -27,6 +33,32 @@ struct Node{
   int line;
   DataType dataType;
   union{
+    struct{
+      Node **funcs;
+      int count;
+    } program;
+    struct{
+      char *name;
+      Param *params;
+      int nparams;
+      DataType ret;
+      Node *body;
+      int is_main;
+    } func;
+    struct{
+      char *name;
+      int is_mutable;
+      DataType declared;
+      Node *init;
+    } vardef;
+    struct{
+      char *name;
+      Node **args;
+      int nargs;
+    } call;
+    struct{
+      Node *value;
+    } ret;
     struct{
       int value;
     } num;
@@ -59,6 +91,12 @@ Node *new_node(NodeKind k, int line){
   n->kind = k;
   n->line = line;
   return n;
+}
+
+void block_add(Node *blk, Node *stmt)
+{
+  blk->as.block.stmts = realloc(blk->as.block.stmts, (blk->as.block.count + 1) * sizeof(Node *));
+  blk->as.block.stmts[blk->as.block.count++] = stmt;
 }
 
 Node *node_if(Node *cond, Node *then_b, Node *else_b, int line){
