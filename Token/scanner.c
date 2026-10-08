@@ -417,16 +417,21 @@ int get_token(Token *t){
 				buf[len] = '\0';
 				t->type = TOKEN_STRING;
 				t->stringValue = malloc(len + 1);
-				if (t->stringValue == NULL) return 99;
+				if (t->stringValue == NULL) return 1;
 				strcpy(t->stringValue, buf);
 				return 0;
 			}
 			break;
 
 			case S_ESC:
-			printf("není ještě hotovo");
-			break
+			if(c == 'n') buf[len++] = '\n';
+			else if(c == 'r') buf[len++] = '\r';
+			else if(c == 't') buf[len++] = '\t';
+			else if(c == '\\') buf[len++] = '\\';
+			else if(c == '"') buf[len++] = '"';
 			else return 1;
+			state = S_STR;
+			break;
 
 			case S_STR:
 			printf("není ještě hotovo");		
