@@ -136,7 +136,6 @@ int get_token(Token *t){
 				}
 				//řetězce
 				else if (c == '"'){
-					buf[len++] = c;
 					state = S_QFIRST;
 				}
 
@@ -410,8 +409,19 @@ int get_token(Token *t){
 			break;
 
 			case S_QSEC:
-			printf("není ještě hotovo");		
-			return 1;
+			if(c == '"'){
+				state = S_ML;
+			}
+			else{
+				ungetc(c, stdin);
+				buf[len] = '\0';
+				t->type = TOKEN_STRING;
+				t->stringValue = malloc(len + 1);
+				if (t->stringValue == NULL) return 99;
+				strcpy(t->stringValue, buf);
+				return 0;
+			}
+			break;
 
 			case S_ESC:
 			printf("není ještě hotovo");
