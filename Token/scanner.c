@@ -434,8 +434,22 @@ int get_token(Token *t){
 			break;
 
 			case S_STR:
-			printf("není ještě hotovo");		
-			return 1;
+			if(c == '"'){
+				buf[len] = '\0';
+				t->type = TOKEN_STRING;
+				t->stringValue = malloc(len + 1);
+				if (t->stringValue == NULL) return 99;
+				strcpy(t->stringValue, buf);
+				return 0;
+			}
+			else if(c == '\\'){
+				state = S_ESC;
+			}
+			else if(c != '\n' && c != EOF){
+				buf[len++] = c;
+			}
+			else return 1;
+			break;
 
 			case S_STR_END:
 			printf("není ještě hotovo");		
