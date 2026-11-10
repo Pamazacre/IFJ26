@@ -557,6 +557,50 @@ int get_token(Token *t){
 			printf("není ještě hotovo");		
 			return 1;
 
+			case S_ASSIGN:
+			if(c == '='){
+				t->type = TOKEN_EQ;
+				return 0;
+			}
+			else{
+				ungetc(c, stdin);
+				t->type = TOKEN_ASSIGN;
+				return 0;
+			}
+			break;
+ 
+			case S_EXCLAM:
+			if(c == '='){
+				t->type = TOKEN_NEQ;
+				return 0;
+			}
+			else return 1;
+			break;
+ 
+			case S_L_THAN:
+			if(c == '='){
+				t->type = TOKEN_LE;
+				return 0;
+			}
+			else{
+				ungetc(c, stdin);
+				t->type = TOKEN_LT;
+				return 0;
+			}
+			break;
+ 
+			case S_G_THAN:
+			if(c == '='){
+				t->type = TOKEN_GE;
+				return 0;
+			}
+			else{
+				ungetc(c, stdin);
+				t->type = TOKEN_GT;
+				return 0;
+			}
+			break;
+
 			default: return 1;
 		}
 	}
