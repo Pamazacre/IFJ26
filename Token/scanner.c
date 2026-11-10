@@ -542,20 +542,54 @@ int get_token(Token *t){
 			return 1;
 
 			case S_ML:
-			printf("není ještě hotovo");		
-			return 1;
+			if(c == '"'){
+				state = S_ML_Q1;
+			}
+			else if(c == EOF) return 1;
+			else{
+				if(c == '\n') line++;
+				buf[len++] = c;
+			}
+			break;
 			
 			case S_ML_Q1:
-			printf("není ještě hotovo");		
-			return 1;
+			if(c == '"'){
+				state = S_ML_Q2;
+			}
+			else if(c == EOF) return 1;
+			else{
+				ungetc(c, stdin);
+				buf[len++] = '"';
+				state = S_ML;
+			}
+			break;
 
 			case S_ML_Q2:
-			printf("není ještě hotovo");		
-			return 1;
+			if(c == '"'){
+				state = S_ML_END;
+			}
+			else if(c == EOF) return 1;
+			else{
+				ungetc(c, stdin);
+				buf[len++] = '"';
+				state = S_ML_Q1;
+			}
+			break;
 
 			case S_ML_END:
-			printf("není ještě hotovo");		
-			return 1;
+			if(c == '"'){
+				buf[len++] = c;
+			}
+			else{
+				ungetc(c, stdin);
+				buf[len] = '\0';
+				t->type = TOKEN_STRING;
+				t->stringValue = malloc(len + 1);
+				if (t->stringValue == NULL) return 99;
+				strcpy(t->stringValue, buf);
+				return 0;
+			}
+			break;
 
 			case S_COMMS:
 			if(c == '/'){
