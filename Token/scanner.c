@@ -415,6 +415,19 @@ int get_token(Token *t){
 			}
 			break;
 
+			case S_AT:
+			if((c >= '0' && c <= '9')||((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) || c == '_'){
+				buf[len++] = c;
+			}
+			else{
+				ungetc(c, stdin);
+				buf[len] = '\0';
+				if(strcmp(buf, "@main") != 0) return 1;
+				t->type = TOKEN_AT_MAIN;
+				return 0;
+			}
+			break;
+
 			case S_UNS:
 				if((c >= '0' && c <= '9')||((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) || c == '_'){
 					buf[len++] = c;
