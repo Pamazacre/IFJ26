@@ -9,6 +9,17 @@
 //static int line = 1, col = 0, prevCol = 0;
 static int line = 1;
 
+//MUSI SI PAMATOVAT SVOJI HODNOTU PRES NEKOLIK STAVU AUTOMATU, PROTO SEW JEDNA O STATICKE PROMENNE, respek. mezi volanimi jinymi tokeny.
+#define INDENT_MAX 256
+static int line_start = 1; //zacatek radku
+static int indent = 0; // pocet mezer na aktualnim radku
+static int tab_at_start = 0; //pocet tabs na zacatku radku / musim implementovat?
+static int paren = 0; //pocet ( na radku
+static int indent_stack[INDENT_MAX] = {0}; //odsazeni
+static int indent_top = 0; //vrchol indentu / chova se jako lifo fronta
+static int pending_dedent = 0; // kolik )) jeste zbyva vratit
+static int last_eol = 1;
+
 typedef enum { // podobně jako v token.h - jedná se o jakousi kolekci VŠECH stavů, do které se může konečný automat dostat
 	    	   //-> místo tedy několik vnořených funkcí bude potom jen jeden velký switch, kde v podstatě jednotlivé stavy budou definovány
 
@@ -31,12 +42,11 @@ typedef enum { // podobně jako v token.h - jedná se o jakousi kolekci VŠECH s
 	S_INT_DOT,/**/
 	S_EXP,/**/
 	S_FRAC,/**/
-	S_SUFFIX1,/**/
+	S_SUFFIX,/**/
 	S_FRAC_,/**/
 	S_EXPD,/**/
 	S_EXP_SIGN,/**/
 	S_EXPD_,/**/
-	S_SUFFIX2,/**/
 	S_ML,/**/
 	S_ML_Q1,/**/
 	S_ML_Q2,/**/
@@ -81,6 +91,13 @@ int get_token(Token *t){
 	int len = 0;
  	*t = (Token){ 0 }; 
 
+	if (pending_dedent > 0) {
+		pending_dedent--;
+		t->type = TOKEN_DEDENT;
+		t->line = line;
+		return 0;
+	}
+
 	while(1){
 
 		if (len >= 63) return 1;   //buffer plný
@@ -97,13 +114,63 @@ int get_token(Token *t){
 
 				if (c == '\n') {
 					line++;                        
+					if (paren == 0) {
+						line_start = 1;
+						indent = 0;
+						tab_at_start = 0;
+						if (!last_eol) {
+							last_eol = 1;
+							t->type = TOKEN_EOL;
+							return 0;
+						}
+					}
 				}
-				else if (c == ' ' || c == '\t' || c == '\r') {
+				else if (c == ' ') {
+					if (line_start) indent++;
+				}
+				else if (c == '\t') {
+					if (line_start) tab_at_start = 1;
+				}
+				else if (c == '\r') {
 					// bílý znak přeskočit, zůstat v S_START
 				}
 				else if (c == EOF) {
+					if (!last_eol) {
+						last_eol = 1;
+						t->type = TOKEN_EOL;
+						return 0;
+					}
+					if (indent_top > 0) {
+						indent_top--;
+						t->type = TOKEN_DEDENT;
+						return 0;
+					}
 					t->type = TOKEN_EOF;
 					return 0;
+				}
+					// Fable 5.2(prave vysel a fakt jsem ho chtel zkusit) / "s pomoci kontextu celeho projektu mi vysvetli a pomoz, jak mam spravne implementovat zasobnik zavorek tak, aby se vzdy ohlidal spravny pocetvnoreni, na jakem jsem stupni v nejakem bloku atd.
+					// nejprve mi vse vysvetli, pak nacrtni jak ma fungovat cela funkce.
+				else if (line_start && c != '/') {
+					line_start = 0;
+					last_eol = 0;
+					if (tab_at_start) return 1;
+					ungetc(c, stdin);
+					if (indent > indent_stack[indent_top]) {
+						if (indent_top + 1 >= INDENT_MAX) return 99;
+						indent_stack[++indent_top] = indent;
+						t->type = TOKEN_INDENT;
+						return 0;
+					}
+					if (indent < indent_stack[indent_top]) {
+						while (indent < indent_stack[indent_top]) {
+							indent_top--;
+							pending_dedent++;
+						}
+						if (indent != indent_stack[indent_top]) return 2;
+						pending_dedent--;
+						t->type = TOKEN_DEDENT;
+						return 0;
+					}
 				}
 
 				// INT
@@ -137,7 +204,6 @@ int get_token(Token *t){
 				}
 				//řetězce
 				else if (c == '"'){
-					buf[len++] = c;
 					state = S_QFIRST;
 				}
 
@@ -187,11 +253,13 @@ int get_token(Token *t){
 				}
 
 				else if (c == '('){
+					paren++;
 					t->type = TOKEN_LPAR;      
 					return 0; 
 				}
 
 				else if (c == ')'){
+					if (paren > 0) paren--;
 					t->type = TOKEN_RPAR;      
 					return 0; 
 				}
@@ -375,11 +443,7 @@ int get_token(Token *t){
 			}
 			break;
 
-			case S_SUFFIX1:
-			printf("není ještě hotovo");		
-			return 1;
-
-			case S_SUFFIX2:
+			case S_SUFFIX:
 			printf("není ještě hotovo");		
 			return 1;
 
@@ -400,20 +464,61 @@ int get_token(Token *t){
 			break;
 
 			case S_QFIRST:
-			printf("není ještě hotovo");		
-			return 1;
+			if(c == '"'){
+				state = S_QSEC;
+			}
+			else if(c == '\\'){
+				state = S_ESC;
+			}
+			else if(c != '\n' && c != EOF){
+				buf[len++] = c;
+				state = S_STR;
+			}
+			else return 1;
+			break;
 
 			case S_QSEC:
-			printf("není ještě hotovo");		
-			return 1;
+			if(c == '"'){
+				state = S_ML;
+			}
+			else{
+				ungetc(c, stdin);
+				buf[len] = '\0';
+				t->type = TOKEN_STRING;
+				t->stringValue = malloc(len + 1);
+				if (t->stringValue == NULL) return 99;
+				strcpy(t->stringValue, buf);
+				return 0;
+			}
+			break;
 
 			case S_ESC:
-			printf("není ještě hotovo");		
-			return 1;
+			if(c == 'n') buf[len++] = '\n';
+			else if(c == 'r') buf[len++] = '\r';
+			else if(c == 't') buf[len++] = '\t';
+			else if(c == '\\') buf[len++] = '\\';
+			else if(c == '"') buf[len++] = '"';
+			else return 1;
+			state = S_STR;
+			break;
 
 			case S_STR:
-			printf("není ještě hotovo");		
-			return 1;
+			if(c == '"'){
+				buf[len] = '\0';
+				t->type = TOKEN_STRING;
+				t->stringValue = malloc(len + 1);
+				if (t->stringValue == NULL) return 99;
+				strcpy(t->stringValue, buf);
+				return 0;
+			}
+			else if(c == '\\'){
+				state = S_ESC;
+			}
+			else if(c != '\n' && c != EOF){
+				buf[len++] = c;
+			}
+			else return 1;
+			break;
 
 			case S_STR_END:
 			printf("není ještě hotovo");		
