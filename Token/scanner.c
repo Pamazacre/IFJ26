@@ -89,6 +89,8 @@ int get_token(Token *t){
 	int c;
 	char buf[64];
 	int len = 0;
+	int depth = 0;
+	int comment_nl = 0;
  	*t = (Token){ 0 }; 
 
 	if (pending_dedent > 0) {
@@ -560,6 +562,8 @@ int get_token(Token *t){
 				state = S_LC;
 			}
 			else if(c == '*'){
+				depth = 1;
+				comment_nl = 0;
 				state = S_BC;
 			}
 			else{
@@ -580,20 +584,56 @@ int get_token(Token *t){
 			break;
 
 			case S_BC:
-			printf("není ještě hotovo");		
-			return 1;
+			if(c == EOF) return 1;
+			else if(c == '*') state = S_BL_S;
+			else if(c == '/') state = S_BL_SLASH;
+			else if(c == '\n'){
+				line++;
+				comment_nl = 1;
+			}
+			break;
 
 			case S_BL_S:
-			printf("není ještě hotovo");		
-			return 1;
+			if(c == EOF) return 1;
+			else if(c == '/'){
+				depth--;
+				if(depth == 0) state = S_BL_END;
+				else state = S_BC;
+			}
+			else if(c != '*'){
+				if(c == '\n'){
+					line++;
+					comment_nl = 1;
+				}
+				state = S_BC;
+			}
+			break;
 
 			case S_BL_END:
-			printf("není ještě hotovo");		
-			return 1;
+			if(c == ' ' || c == '\t' || c == '\r'){
+			}
+			else if(c == '\n' || c == EOF || !comment_nl){
+				ungetc(c, stdin);
+				len = 0;
+				state = S_START;
+			}
+			else return 1;
+			break;
 
 			case S_BL_SLASH:
-			printf("není ještě hotovo");		
-			return 1;
+			if(c == EOF) return 1;
+			else if(c == '*'){
+				depth++;
+				state = S_BC;
+			}
+			else if(c != '/'){
+				if(c == '\n'){
+					line++;
+					comment_nl = 1;
+				}
+				state = S_BC;
+			}
+			break;
 
 			case S_ASSIGN:
 			if(c == '='){
