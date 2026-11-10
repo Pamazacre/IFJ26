@@ -555,6 +555,30 @@ int get_token(Token *t){
 			printf("není ještě hotovo");		
 			return 1;
 
+			case S_COMMS:
+			if(c == '/'){
+				state = S_LC;
+			}
+			else if(c == '*'){
+				state = S_BC;
+			}
+			else{
+				ungetc(c, stdin);
+				line_start = 0;
+				last_eol = 0;
+				t->type = TOKEN_DIV;
+				return 0;
+			}
+			break;
+
+			case S_LC:
+			if(c == '\n' || c == EOF){
+				ungetc(c, stdin);
+				len = 0;
+				state = S_START;
+			}
+			break;
+
 			case S_BC:
 			printf("není ještě hotovo");		
 			return 1;
