@@ -70,6 +70,7 @@ typedef struct { // sem dát všechny možné prvky, které jakýkoliv token pot
     int line; //chybové hlášky
 }Token;
 
+int get_token(Token *t);
 
 
 
