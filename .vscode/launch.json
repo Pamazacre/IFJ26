@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "/Users/pavelsenkyr/Library/Mobile Documents/com~apple~CloudDocs/Documents/Škola/FIT/IFJ26",
+      "program": "/Users/pavelsenkyr/Library/Mobile Documents/com~apple~CloudDocs/Documents/Škola/FIT/IFJ26/build/Debug/outDebug"
+    }
+  ]
+}

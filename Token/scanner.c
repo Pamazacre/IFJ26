@@ -464,16 +464,17 @@ int get_token(Token *t){
 			break;
 
 			case S_QFIRST:
-			if(c == '"'){
-				state = S_QSEC;
-			}
-			else if(c == '\\'){
-				state = S_ESC;
-			}
-			else if(c != '\n' && c != EOF){
+			if(c == 'c'){
 				buf[len++] = c;
 				state = S_STR;
 			}
+			else if(c == ' " '){
+				buf[len++] = c;
+				state = S_QSEC;
+			}
+			/*else if(c == "\"){ //jak napsat se rovná \? 
+				
+			}*/
 			else return 1;
 			break;
 
@@ -486,7 +487,7 @@ int get_token(Token *t){
 				buf[len] = '\0';
 				t->type = TOKEN_STRING;
 				t->stringValue = malloc(len + 1);
-				if (t->stringValue == NULL) return 99;
+				if (t->stringValue == NULL) return 1;
 				strcpy(t->stringValue, buf);
 				return 0;
 			}
