@@ -384,6 +384,18 @@ int get_token(Token *t){
 			else return 1;
 			break;
 
+			case S_DOUBLE_DOT:
+			if(c >= '0' && c <= '9'){
+				buf[len++] = c;
+				state = S_FRAC;
+			}
+			else{
+				ungetc(c, stdin);
+				t->type = TOKEN_DOT;
+				return 0;
+			}
+			break;
+
 			case S_ID:
 				if((c >= '0' && c <= '9')||((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) || c == '_'){
 					buf[len++] = c;
