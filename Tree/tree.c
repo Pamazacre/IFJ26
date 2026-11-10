@@ -136,12 +136,14 @@ void print_node(Node *n, int depth){
   printf("%*s", depth * 2, "");
   switch (n->kind){
   case N_NUM:
-    printf("NUM %d\n", n->as.num.value);
+    printf("NUM %lld\n", n->as.num.value);
     break;
   case N_WHILE:
     printf("WHILE\n");
     print_node(n->as.while_.cond, depth + 1);
     print_node(n->as.while_.body, depth + 1);
+    break;
+  default:
     break;
   }
 }
