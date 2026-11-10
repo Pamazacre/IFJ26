@@ -79,6 +79,14 @@ static TokenType keyword(const char *s){
 	if(strcmp(s,"val") == 0) return TOKEN_VAL;
 	if(strcmp(s,"var") == 0) return TOKEN_VAR;
 	if(strcmp(s,"while") == 0) return TOKEN_WHILE;
+	if(strcmp(s,"Boolean") == 0) return TOKEN_RESERVED;
+	if(strcmp(s,"case") == 0) return TOKEN_RESERVED;
+	if(strcmp(s,"class") == 0) return TOKEN_RESERVED;
+	if(strcmp(s,"extension") == 0) return TOKEN_RESERVED;
+	if(strcmp(s,"for") == 0) return TOKEN_RESERVED;
+	if(strcmp(s,"List") == 0) return TOKEN_RESERVED;
+	if(strcmp(s,"match") == 0) return TOKEN_RESERVED;
+	if(strcmp(s,"type") == 0) return TOKEN_RESERVED;
 	return TOKEN_ID;
 }
 
