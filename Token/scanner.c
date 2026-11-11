@@ -180,7 +180,7 @@ int get_token(Token *t) {
         t->type = TOKEN_EOF;
         return 0;
       }
-      // Fable 5.2(prave vysel a fakt jsem ho chtel zkusit) / "s pomoci kontextu
+      // Fable 5.2 / "s pomoci kontextu
       // celeho projektu mi vysvetli a pomoz, jak mam spravne implementovat
       // zasobnik zavorek tak, aby se vzdy ohlidal spravny pocetvnoreni, na
       // jakem jsem stupni v nejakem bloku atd. nejprve mi vse vysvetli, pak
