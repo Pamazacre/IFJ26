@@ -52,6 +52,9 @@ static void skip_eols(void){
     next();
 }
 
+static Node *parse_expr(void);
+static Node *parse_block(void);
+
 // parsne typy
 static DataType parse_type(void){
   DataType d;
@@ -133,6 +136,117 @@ static Node *parse_expr(void){
   return left;
 }
 
+static Node *parse_call(void){
+  Node *c = make_call(cur.stringValue, cur.line);
+  next();
+  expect(TOKEN_LPAR);
+  if (cur.type != TOKEN_RPAR){
+    call_add_arg(c, parse_var());
+    while (cur.type == TOKEN_COMMA){
+      next();
+      if (cur.type == TOKEN_RPAR)
+        break; // koncova carka
+      call_add_arg(c, parse_var());
+    }
+  }
+  expect(TOKEN_RPAR);
+  return c;
+}
+
+static Node *parse_expr_or_call(void){
+  if (cur.type == TOKEN_ID && peek().type == TOKEN_LPAR)
+    return parse_call();
+  return parse_expr();
+}
+
+static Node *parse_stmt(void){
+  int line = cur.line;
+  switch (cur.type){
+  case TOKEN_VAL:
+  case TOKEN_VAR:{
+    int is_mutable = (cur.type == TOKEN_VAR);
+    next();
+    if (cur.type != TOKEN_ID)
+      error();
+    char *name = cur.stringValue;
+    next();
+    DataType declared = D_UNKNOWN;
+    if (cur.type == TOKEN_COLON){
+      next();
+      declared = parse_type();
+    }
+    expect(TOKEN_ASSIGN);
+    return make_vardef(name, is_mutable, declared, parse_expr_or_call(), line);
+  }
+  case TOKEN_RETURN:{ // return
+    next();
+    Node *value = NULL;
+    if (cur.type != TOKEN_EOL && cur.type != TOKEN_SEMICOLON &&
+        cur.type != TOKEN_DEDENT && cur.type != TOKEN_EOF)
+      value = parse_expr_or_call();
+    return make_return(value, line);
+  }
+  case TOKEN_IF:{ // if cond then EOL blok else EOL blok
+    next();
+    Node *cond = parse_expr();
+    expect(TOKEN_THEN);
+    expect(TOKEN_EOL);
+    Node *then_b = parse_block();
+    expect(TOKEN_ELSE);
+    expect(TOKEN_EOL);
+    Node *else_b = parse_block();
+    return make_if(cond, then_b, else_b, line);
+  }
+  case TOKEN_WHILE:{ // while cond do EOL blok
+    next();
+    Node *cond = parse_expr();
+    expect(TOKEN_DO);
+    expect(TOKEN_EOL);
+    return make_while(cond, parse_block(), line);
+  }
+  case TOKEN_ID:
+    if (peek().type == TOKEN_ASSIGN){ // id =
+      char *name = cur.stringValue;
+      next(); // id
+      next(); // =
+      return make_assign(name, parse_expr_or_call(), line);
+    }
+    return parse_expr_or_call(); // volani nebo vyraz
+  default:
+    return parse_expr(); // samotny vyraz, napr. ()
+  }
+}
+
+static Node *parse_block(void){
+  Node *blk = new_node(N_BLOCK, cur.line);
+  expect(TOKEN_INDENT);
+  while (1){
+    Node *s = parse_stmt();
+    block_add(blk, s);
+    if (s->kind == N_IF || s->kind == N_WHILE){
+      // vnoreny blok uz snedl EOL i DEDENT, oddelovac tu neni
+    }
+    else if (cur.type == TOKEN_EOL || cur.type == TOKEN_SEMICOLON)
+      next();
+    else if (cur.type != TOKEN_DEDENT)
+      error(); // dva prikazy bez oddelovace
+    if (cur.type == TOKEN_DEDENT){
+      next();
+      return blk;
+    }
+  }
+}
+
+static Node *parse_body(void)\{
+  if (cur.type == TOKEN_EOL){
+    next();
+    return parse_block();
+  }
+  Node *n = parse_expr_or_call();
+  if (cur.type != TOKEN_EOL && cur.type != TOKEN_EOF)
+    error();
+  return n;
+}
 // funkce i main funkce
 static Node *parse_func(void){
   int is_main = 0;
@@ -163,7 +277,7 @@ static Node *parse_func(void){
 
   if (cur.type == TOKEN_COLON){ // return type je nepovinny
     next();
-    f->as.func.ret = parse_type();
+    f->as.func.body = parse_body();
   }
   expect(TOKEN_ASSIGN);
 
