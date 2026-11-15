@@ -36,3 +36,26 @@ struct symtable {
 };
 
 /* Implementacia hash tabulky */
+
+/* moja hash fcia - nie FNV ani djb2, kombinacia rotate + xor + nasobenie
+ * kazdy byte sa najprv zrotuje h o 7 dolava (aby sa bity posuvali po slove)
+ * potom xor s bytom * pozicia (pozicia preto aby "ab" a "ba" nedali to iste,
+ * bez toho by sa pri cistom xor anagramy bili) a nakoniec * neparna konst
+ * na konci este avalanche (xor shift) lebo nas zaujimaju len spodne bity
+ * (index = hash & mask) tak nech do nich pretecie aj to co je hore.
+ * konstanty - seed je golden ratio, 0x85EBCA6B je z murmur3 finalizera,
+ * 0x2C1B3C6D je len nahodne neparne cislo, musi byt neparne!"! inak sa
+ * stratia bity pri nasobeny */
+static uint32_t hash_str(const char *s) {
+  uint32_t h = 0x9E3779B9U; /* seed */
+  uint32_t pos = 1;
+  for (; *s != '\0'; s++, pos++) {
+    h = (h << 7) | (h >> 25);               /* rotl 7 */
+    h ^= (uint32_t)(unsigned char)*s * pos; /* byte vazeny poziciou */
+    h *= 0x2C1B3C6DU;
+  }
+  h ^= h >> 16; /* avalanche - horne bity dole */
+  h *= 0x85EBCA6BU;
+  h ^= h >> 13;
+  return h; /* prazdny string -> vrati len "zamiesany" seed, tiez ok */
+}
