@@ -60,16 +60,16 @@ static DataType parse_type(void){
   DataType d;
   switch (cur.type){
   case TOKEN_TYPE_INT:
-    d = D_INT;
+    d = TYPE_INT;
     break;
   case TOKEN_TYPE_DOUBLE:
-    d = D_FLOAT;
+    d = TYPE_DOUBLE;
     break;
   case TOKEN_TYPE_STRING:
-    d = D_STRING;
+    d = TYPE_STRING;
     break;
   case TOKEN_UNIT:
-    d = D_UNIT;
+    d = TYPE_UNIT;
     break;
   default:
     error();
@@ -170,7 +170,7 @@ static Node *parse_stmt(void){
       error();
     char *name = cur.stringValue;
     next();
-    DataType declared = D_UNKNOWN;
+    DataType declared = TYPE_UNKNOWN;
     if (cur.type == TOKEN_COLON){
       next();
       declared = parse_type();
