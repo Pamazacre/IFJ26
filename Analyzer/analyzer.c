@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 //#include "parser.h"
-#include "analyzer.h"
+#include "../Analyzer/analyzer.h"
 #include "../Tree/tree.h"
 #include "../symtable.h"
 
@@ -90,13 +90,12 @@ int check_assign(Node *n, symtable_t *st) {
   }
   return 992;
 }
-
+/* zkontrluje datove typy a podle nich a operatoru vrati nastavi datovy typ nadrazeneho node a vrati nulu,
+ * v pripade chyby vraci prislusnou hodnotu chyby */
 int check_binop(Node *n, symtable_t *st) {
   check_node(n->as.binop.l, st);
   check_node(n->as.binop.r, st);
-  if (n->as.binop.l->dataType == TYPE_DOUBLE || n->as.binop.r->dataType == TYPE_DOUBLE) {
-    n->dataType = TYPE_DOUBLE;
-  }
+
   if (n->as.binop.l->dataType != n->as.binop.r->dataType || n->as.binop.l->dataType == TYPE_UNIT ||
       n->as.binop.l->dataType == TYPE_UNKNOWN) {
     fprintf(stderr, "Chyba (radek %d): Nesedi datove typy \n", n->line);
@@ -143,6 +142,7 @@ int check_binop(Node *n, symtable_t *st) {
   }
   return 0;
 }
+// projde blok a zkontroluje kazdy jednotivy node v bloku
 int check_block(Node *n, symtable_t *st) {
   symtable_push_scope(st);
   for (int i = 0; i < n->as.block.count; i++) {
@@ -171,6 +171,7 @@ int check_while(Node *n, symtable_t *st) {
   }
   return 0;
 }
+// zkontoluje podminku a bloky then a pokud existuje else tak zkontroluje to
 int check_if(Node *n, symtable_t *st) {
   int err = 0;
 
@@ -182,15 +183,19 @@ int check_if(Node *n, symtable_t *st) {
   if (err != 0) {
     return err;
   }
-  err = check_block(n->as.if_.else_b, st);
-  if (err != 0) {
-    return err;
+  if (n->as.if_.else_b != NULL) {
+    err = check_block(n->as.if_.else_b, st);
+    if (err != 0) {
+      return err;
+    }
   }
   return 0;
 }
 
 int add_func(Node *n, symtable_t *st) {
   symbol_t *func = NULL;
+  fprintf(stderr,"DEBUG return datatype: %d funkce: %s \n",n->as.func.ret,n->as.func.name);
+
   st_status_t status = symtable_insert_func(st, n->as.func.name, n->as.func.ret, &func);
   if (status == ST_ERR_NO_SCOPE || status == ST_ERR_REDEF) {
     return 4;
@@ -225,7 +230,7 @@ int check_func(Node *n, symtable_t *st){
   }
   DataType prevReturn = expReturn;
   expReturn = n->as.func.ret;
-
+  fprintf(stderr,"DEBUG: expReturn: %d \n",expReturn);
   int err = check_node(n->as.func.body, st);
 
   expReturn = prevReturn;
@@ -290,6 +295,7 @@ int check_return(Node *n, symtable_t *st) {
   n->dataType = n->as.ret.value->dataType;
   return 0;
 }
+// konec ai kodu
 int check_call(Node *n, symtable_t *st) {
   symbol_t *symbol = symtable_find_func(st, n->as.call.name);
   if (symbol == NULL) {
@@ -311,6 +317,7 @@ int check_call(Node *n, symtable_t *st) {
       return 5;
     }
   }
+  fprintf(stderr,"DEBUG navratova hodnota puvodni dataType %d novy %d\n",n->dataType, symbol->func.ret_type);
   n->dataType = symbol->func.ret_type;
   return 0;
 }
@@ -359,6 +366,15 @@ int check_node(Node *n, symtable_t *st) {
       return 0;
   }
 }
+/* projde vsechny funkce a podiva se zda existuje main
+*/
+bool find_main(Node *n) {
+  for (int i = 0; i < n->as.program.count; i++) {
+    if (n->as.program.funcs[i]->as.func.is_main != 0)
+      return true;
+  }
+  return false;
+}
 
 int analyze(Node *prog) {
   // Node *prog = parse_program();
@@ -376,15 +392,19 @@ int analyze(Node *prog) {
     err = check_program(prog, st);
   }
   else {
+    symtable_free(st);
     err = check_node(prog, st);
   }
-  symtable_free(st);
-  if (err!=0)
+  if (err!=0) {
+    symtable_free(st);
     return err;
-  symbol_t *symbol=symtable_find_func(st,"main");
-  if (symbol == NULL) {
+
+  }
+  if (find_main(prog)) {
     fprintf(stderr,"Chyba: Neexistujici main");
+    symtable_free(st);
     return 3;
   }
+  symtable_free(st);
   return err;
 }
