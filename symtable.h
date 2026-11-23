@@ -2,16 +2,10 @@
  * Implementace překladače imperativního jazyka IFJ26
  *
  * symtable.h -- tabulka symbolov (ADT), varianta TRP-izp
- * Authors: xbeniaj00
+ * 
+ * Watermark: xbeniaj00 - Joe Benjamin Benian 
  *
- * ako to funguje v skratke:
- *  - kazdy blok (scope) ma vlastnu hash tabulku, bloky su na stacku
- *  - funkcie su v jednej globalnej tabulke, oddelene od premennych
- *    (premenna sa moze volat rovnako ako funkcia a nevadi to)
- *  - hladanie premennej ide od najvnutornejsieho bloku von
- *  - parametre a telo funkcie = JEDEN scope (demo slide "Tabulka symbolu 2",
- *    val x po parametri x je redefinicia, error 4)
- *  - ptr na symbol plati kym sa nepopne jeho scope!! (funkcie az do free)
+ *  - ptr na symbol plati kym sa nepopne jeho scope!?! (funkcie az do free)
  *    takze co treba neskor (typ, uid) si treba skopirovat do AST
  *  - name a param_types nemenit zvonku, patria tabulke
  *  - error kody: nenajdene 3, redefinicia 4, zapis do val 7, malloc 99
@@ -73,7 +67,7 @@ typedef struct symtable symtable_t;
 /* nova prazdna tabulka, ziadne funkcie ani scope, NULL ked malloc zlyha */
 symtable_t *symtable_create(void);
 
-/* uvolni vsetko (aj neuzavrete scopy), NULL je ok */
+/* uvolni kompletne vsetko Null je solved tak isto ako coding... */
 void symtable_free(symtable_t *st);
 
 /* otvori novy scope (telo funkcie, if, while..), false => malloc fail */
