@@ -3,7 +3,7 @@
  *
  * symtable.h -- tabulka symbolov (ADT), varianta TRP-izp
  * 
- * Watermark: xbeniaj00 - Joe Benjamin Benian 
+ * Autor: xbeniaj00 
  *
  *  - ptr na symbol plati kym sa nepopne jeho scope!?! (funkcie az do free)
  *    takze co treba neskor (typ, uid) si treba skopirovat do AST
