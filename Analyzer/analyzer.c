@@ -97,15 +97,31 @@ int check_assign(Node *n, symtable_t *st) {
 /* zkontrluje datove typy a podle nich a operatoru vrati nastavi datovy typ nadrazeneho node a vrati nulu,
  * v pripade chyby vraci prislusnou hodnotu chyby */
 int check_binop(Node *n, symtable_t *st) {
-  check_node(n->as.binop.l, st);
-  check_node(n->as.binop.r, st);
+  int err = 0;
+  err = check_node(n->as.binop.l, st);
+  if (err != 0) {
+    return err;
+  }
+  err = check_node(n->as.binop.r, st);
+  if (err != 0) {
+    return err;
+  }
 
-  if (n->as.binop.l->dataType != n->as.binop.r->dataType || n->as.binop.l->dataType == TYPE_UNIT ||
-      n->as.binop.l->dataType == TYPE_UNKNOWN) {
+  DataType lt = n->as.binop.l->dataType;
+  DataType rt = n->as.binop.r->dataType;
+  bool lNum = (lt == TYPE_INT || lt == TYPE_DOUBLE);
+  bool rNum = (rt == TYPE_INT || rt == TYPE_DOUBLE);
+
+  DataType curr;
+  if (lNum && rNum) {
+    curr = (lt == TYPE_DOUBLE || rt == TYPE_DOUBLE) ? TYPE_DOUBLE : TYPE_INT;
+  } else if (lt == rt && lt != TYPE_UNIT && lt != TYPE_UNKNOWN) {
+    curr = lt;
+  } else {
     fprintf(stderr, "Chyba (radek %d): Nesedi datove typy \n", n->line);
     return 6;
   }
-  DataType curr = n->as.binop.l->dataType;
+
   switch (n->as.binop.op) {
     case TOKEN_PLUS:
     case TOKEN_MUL:
@@ -137,21 +153,25 @@ int check_binop(Node *n, symtable_t *st) {
       n->dataType = TYPE_BOOLEAN;
       break;
     case TOKEN_EQ:
+    case TOKEN_NEQ:
       n->dataType = TYPE_BOOLEAN;
       break;
       // prostor pro rozsireni operatoru and or neg
 
     default:
-      break;
+      fprintf(stderr,"Chyba (radek %d): Neznamy operator\n",n->line);
+      return INTERNAL_ERROR;
   }
   return 0;
 }
 // projde blok a zkontroluje kazdy jednotivy node v bloku
 int check_block(Node *n, symtable_t *st) {
-  symtable_push_scope(st);
+  if (!symtable_push_scope(st))
+    return INTERNAL_ERROR;
   for (int i = 0; i < n->as.block.count; i++) {
     int err = check_node(n->as.block.stmts[i], st);
     if (err != 0) {
+      symtable_pop_scope(st);
       return err;
     }
   }
@@ -162,12 +182,12 @@ int check_while(Node *n, symtable_t *st) {
   int err = 0;
   err = check_node(n->as.while_.cond, st);
   if (err != 0) {
+
     return err;
   }
   DataType condDT = n->as.while_.cond->dataType;
   if (condDT != TYPE_BOOLEAN ) {
-
-    return 4;
+    return 6;
   }
   err = check_block(n->as.while_.body, st);
   if (err != 0) {
@@ -180,6 +200,10 @@ int check_if(Node *n, symtable_t *st) {
   int err = 0;
 
   err = check_node(n->as.if_.cond, st);
+  if (n->as.if_.cond->dataType !=TYPE_BOOLEAN) {
+    fprintf(stderr,"Chyba (radek %d): Podminka neni typu Boolean\n",n->line);
+    return 6;
+  }
   if (err != 0) {
     return err;
   }
@@ -210,7 +234,6 @@ int add_func(Node *n, symtable_t *st) {
   for (int i = 0; i < n->as.func.nparams; i++) {
     bool err = symtable_add_param(func, n->as.func.params[i].type);
     if (!err) {
-      symtable_pop_scope(st);
       return INTERNAL_ERROR;
     }
   }
@@ -235,7 +258,14 @@ int check_func(Node *n, symtable_t *st){
   DataType prevReturn = expReturn;
   expReturn = n->as.func.ret;
   fprintf(stderr,"DEBUG: expReturn: %d \n",expReturn);
-  int err = check_node(n->as.func.body, st);
+  int err = 0;
+
+  for (int i = 0;i< n->as.func.body->as.block.count; i++) {
+    err = check_node(n->as.func.body->as.block.stmts[i],st);
+    if (err != 0) {
+      break;
+    }
+  }
 
   expReturn = prevReturn;
   symtable_pop_scope(st);
@@ -301,22 +331,25 @@ int check_return(Node *n, symtable_t *st) {
 }
 // konec ai kodu
 int check_call(Node *n, symtable_t *st) {
+  int err = 0;
   symbol_t *symbol = symtable_find_func(st, n->as.call.name);
   if (symbol == NULL) {
-    fprintf(stderr, "Chyba (radek %d): Volani nedefinovane funkce '%s'", n->line, n->as.call.name);
+    fprintf(stderr, "Chyba (radek %d): Volani nedefinovane funkce %s\n", n->line, n->as.call.name);
     return 3;
   }
   if (symbol->func.param_count != (uint32_t)n->as.call.nargs) {
-    fprintf(stderr, "Chyba (radek %d): Neshodny pocet argumentu ve funkci %s", n->line,
+    fprintf(stderr, "Chyba (radek %d): Neshodny pocet argumentu ve funkci %s\n", n->line,
             n->as.call.name);
     return 5;
   }
 
   for (int i = 0; i < n->as.call.nargs; i++) {
-    check_node(n->as.call.args[i], st);
-
+    err = check_node(n->as.call.args[i], st);
+    if (err != 0) {
+      return err;
+    }
     if (n->as.call.args[i]->dataType != symbol->func.param_types[i]) {
-      fprintf(stderr, "Chyba (radek %d): Neschodny datatype argumentu funkce %s", n->line,
+      fprintf(stderr, "Chyba (radek %d): Neschodny datatype argumentu funkce %s\n", n->line,
               n->as.call.name);
       return 5;
     }
@@ -378,11 +411,11 @@ int check_main(Node *n) {
     if (n->as.program.funcs[i]->as.func.is_main == 1) {
       mainCount++;
       if (n->as.program.funcs[i]->as.func.nparams != 0) {
-        fprintf(stderr, "Chyba (radek %d): V definici main je parametr",n->line);
+        fprintf(stderr, "Chyba (radek %d): V definici main je parametr\n",n->line);
         return 5;
       }
       if (n->as.program.funcs[i]->as.func.ret != TYPE_UNIT) {
-        fprintf(stderr, "Chyba (radek %d): V return type main neni Unit",n->line);
+        fprintf(stderr, "Chyba (radek %d): V return type main neni Unit\n",n->line);
         return 6;
       }
     }
@@ -420,12 +453,11 @@ int analyze(Node *prog) {
     if (err ==0) {
       err = check_program(prog, st);
     }
-  }
-  else {
-    symtable_free(st);
-    err = check_node(prog, st);
+  }else {
+    err = check_node(prog,st);
   }
 
   symtable_free(st);
   return err;
 }
+
