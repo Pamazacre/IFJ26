@@ -16,6 +16,13 @@
 static int check_node(Node *n, symtable_t *st);
 static DataType expReturn = TYPE_UNKNOWN;
 
+int compatible(DataType expected, DataType actual) {
+  if (expected == TYPE_ANY) {
+    return true;
+  }
+  return expected == actual || (expected == TYPE_DOUBLE && actual == TYPE_INT);
+}
+
 int check_vardef(Node *n, symtable_t *st) {
   DataType finalType = n->as.vardef.declared;
   if (n->as.vardef.init != NULL) {
@@ -28,19 +35,15 @@ int check_vardef(Node *n, symtable_t *st) {
     if (finalType == TYPE_UNKNOWN) {
       finalType = n->as.vardef.init->dataType;
     }
-    if (finalType == TYPE_UNIT) {
-      return 4;
-    }
-    if (finalType != n->as.vardef.init->dataType) {
-      return 4;
+    if (!compatible(finalType,n->as.vardef.init->dataType)) {
+      return 6;
     }
   } else {
     if (finalType == TYPE_UNKNOWN) {
-      return 4;
+      return 6;
     }
   }
-  st_status_t status =
-      symtable_insert_var(st, n->as.vardef.name, finalType, n->as.vardef.is_mutable, NULL);
+  st_status_t status = symtable_insert_var(st, n->as.vardef.name, finalType, n->as.vardef.is_mutable, NULL);
 
   if (status == ST_ERR_REDEF) {
     fprintf(stderr, "Chyba (radek %d): Redefinice promenne '%s' \n", n->line, n->as.vardef.name);
@@ -53,7 +56,7 @@ int check_vardef(Node *n, symtable_t *st) {
   return 0;
 }
 int check_var(Node *n, symtable_t *st) {
-  if (n->as.var.name != NULL) {
+  if (n->as.assign.name != NULL) {
     symbol_t *symbol = symtable_find_var(st, n->as.var.name);
     if (symbol == NULL) {
       fprintf(stderr, "Chyba (radek %d): Nedefinovana promenna %s \n", n->line, n->as.var.name);
@@ -74,19 +77,17 @@ int check_assign(Node *n, symtable_t *st) {
       fprintf(stderr, "Chyba (radek %d): Nedefinovana promenna %s \n", n->line, n->as.var.name);
       return 3;
     }
-    if (symbol->var.is_mutable == false) {
-      fprintf(stderr, "Chyba (radek %d): Nelze zapisovat do konstanty %s \n", n->line,
-              n->as.assign.name);
-      return 7;
-    }
 
     int err = check_node(n->as.assign.value, st);
     if (err) {
       return err;
     }
-    fprintf(stderr,"DEBUG - prirazeni do '%s': typ promenne = %d, typ vyrazu = %d\n",
-       n->as.assign.name, symbol->var.type, n->as.assign.value->dataType);
-    if (symbol->var.type != n->as.assign.value->dataType) {
+    if (symbol->var.is_mutable == false) {
+      fprintf(stderr, "Chyba (radek %d): Nelze zapisovat do konstanty %s \n", n->line,
+              n->as.assign.name);
+      return 7;
+    }
+    if (!compatible(symbol->var.type, n->as.assign.value->dataType)) {
       fprintf(stderr, "Chyba (radek %d): Nesedi datype promenne %s \n", n->as.assign.value->line, n->as.assign.name);
       return 6;
     }
@@ -195,17 +196,17 @@ int check_while(Node *n, symtable_t *st) {
   }
   return 0;
 }
-// zkontoluje podminku a bloky then a pokud existuje else tak zkontroluje to
+// zkontroluje podminku a blok then a pokud existuje else tak zkontroluje to
 int check_if(Node *n, symtable_t *st) {
   int err = 0;
 
   err = check_node(n->as.if_.cond, st);
+  if (err != 0) {
+    return err;
+  }
   if (n->as.if_.cond->dataType !=TYPE_BOOLEAN) {
     fprintf(stderr,"Chyba (radek %d): Podminka neni typu Boolean\n",n->line);
     return 6;
-  }
-  if (err != 0) {
-    return err;
   }
   err = check_block(n->as.if_.then_b, st);
   if (err != 0) {
@@ -321,7 +322,7 @@ int check_return(Node *n, symtable_t *st) {
   }
 
   // 3. Porovnáme typ výrazu s očekávaným návratovým typem funkce
-  if (expReturn != TYPE_UNKNOWN && expReturn != n->as.ret.value->dataType) {
+  if (expReturn == TYPE_UNKNOWN && !compatible(expReturn, n->as.ret.value->dataType)) {
     fprintf(stderr, "Chyba (radek %d): Neschoda navratoveho typu\n", n->line);
     return 6;
   }
@@ -348,7 +349,7 @@ int check_call(Node *n, symtable_t *st) {
     if (err != 0) {
       return err;
     }
-    if (n->as.call.args[i]->dataType != symbol->func.param_types[i]) {
+    if (!compatible(symbol->func.param_types[i],n->as.call.args[i]->dataType)) {
       fprintf(stderr, "Chyba (radek %d): Neschodny datatype argumentu funkce %s\n", n->line,
               n->as.call.name);
       return 5;
