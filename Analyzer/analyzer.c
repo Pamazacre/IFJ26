@@ -9,6 +9,10 @@
 #include "../Tree/tree.h"
 #include "../symtable.h"
 
+#include <string.h>
+
+#define INTERNAL_ERROR 99
+
 static int check_node(Node *n, symtable_t *st);
 static DataType expReturn = TYPE_UNKNOWN;
 
@@ -43,7 +47,7 @@ int check_vardef(Node *n, symtable_t *st) {
     return 4;
   }
   if (status == ST_ERR_MEMORY || status == ST_ERR_NO_SCOPE) {
-    return 991;
+    return INTERNAL_ERROR;
   }
   n->dataType = finalType;
   return 0;
@@ -80,7 +84,7 @@ int check_assign(Node *n, symtable_t *st) {
     if (err) {
       return err;
     }
-    printf("DEBUG - prirazeni do '%s': typ promenne = %d, typ vyrazu = %d\n",
+    fprintf(stderr,"DEBUG - prirazeni do '%s': typ promenne = %d, typ vyrazu = %d\n",
        n->as.assign.name, symbol->var.type, n->as.assign.value->dataType);
     if (symbol->var.type != n->as.assign.value->dataType) {
       fprintf(stderr, "Chyba (radek %d): Nesedi datype promenne %s \n", n->as.assign.value->line, n->as.assign.name);
@@ -88,7 +92,7 @@ int check_assign(Node *n, symtable_t *st) {
     }
     return 0;
   }
-  return 992;
+  return INTERNAL_ERROR;
 }
 /* zkontrluje datove typy a podle nich a operatoru vrati nastavi datovy typ nadrazeneho node a vrati nulu,
  * v pripade chyby vraci prislusnou hodnotu chyby */
@@ -201,20 +205,20 @@ int add_func(Node *n, symtable_t *st) {
     return 4;
   }
   if (status == ST_ERR_MEMORY) {
-    return 993;
+    return INTERNAL_ERROR;
   }
   for (int i = 0; i < n->as.func.nparams; i++) {
     bool err = symtable_add_param(func, n->as.func.params[i].type);
     if (!err) {
       symtable_pop_scope(st);
-      return 994;
+      return INTERNAL_ERROR;
     }
   }
   return 0;
 }
 int check_func(Node *n, symtable_t *st){
   if (!symtable_push_scope(st)) {
-    return 995;
+    return INTERNAL_ERROR;
   }
   for (int i = 0; i < n->as.func.nparams; i++) {
     st_status_t statusVar =
@@ -225,7 +229,7 @@ int check_func(Node *n, symtable_t *st){
     }
     if (statusVar != ST_OK) {
       symtable_pop_scope(st);
-      return 996;
+      return INTERNAL_ERROR;
     }
   }
   DataType prevReturn = expReturn;
@@ -368,43 +372,60 @@ int check_node(Node *n, symtable_t *st) {
 }
 /* projde vsechny funkce a podiva se zda existuje main
 */
-bool find_main(Node *n) {
+int check_main(Node *n) {
+  int mainCount = 0;
   for (int i = 0; i < n->as.program.count; i++) {
-    if (n->as.program.funcs[i]->as.func.is_main != 0)
-      return true;
+    if (n->as.program.funcs[i]->as.func.is_main == 1) {
+      mainCount++;
+      if (n->as.program.funcs[i]->as.func.nparams != 0) {
+        fprintf(stderr, "Chyba (radek %d): V definici main je parametr",n->line);
+        return 5;
+      }
+      if (n->as.program.funcs[i]->as.func.ret != TYPE_UNIT) {
+        fprintf(stderr, "Chyba (radek %d): V return type main neni Unit",n->line);
+        return 6;
+      }
+    }
   }
-  return false;
+  if (mainCount > 1) {
+    fprintf(stderr, "Chyba (radek %d): V souboru je definovano vice funkci main\n", n->line);
+    return 4;
+  }
+  if (mainCount == 0) {
+    fprintf(stderr, "Chyba (radek %d): V souboru neni definovana funkce main\n", n->line);
+    return 3;
+  }
+  return 0;
 }
 
 int analyze(Node *prog) {
   // Node *prog = parse_program();
   symtable_t *st = symtable_create();
 
-  if (!symtable_insert_builtins(st))
-    return 998;
+
   if (st == NULL) {
     fprintf(stderr, "Chyba vytvareni symtable\n");
-    return 999;
+    return INTERNAL_ERROR;
     // chyba alokace
   }
+  if (!symtable_insert_builtins(st)) {
+    symtable_free(st);
+    fprintf(stderr, "Chyba vlozeni vestavnych funkci\n");
+    return INTERNAL_ERROR;
+  }
   int err = 0;
+
   if (prog->kind == N_PROGRAM) {
-    err = check_program(prog, st);
+    err = check_main(prog);
+    if (err ==0) {
+      err = check_program(prog, st);
+    }
   }
   else {
     symtable_free(st);
     err = check_node(prog, st);
   }
-  if (err!=0) {
-    symtable_free(st);
-    return err;
 
-  }
-  if (find_main(prog)) {
-    fprintf(stderr,"Chyba: Neexistujici main");
-    symtable_free(st);
-    return 3;
-  }
   symtable_free(st);
   return err;
 }
