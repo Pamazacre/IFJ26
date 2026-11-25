@@ -63,6 +63,15 @@ static void set_type(Node *n, data_type_t t) {
 }
 
 static data_type_t expReturn = TYPE_UNKNOWN;
+static bool retExplicit = false;
+
+typedef enum {RES_VALUE, RES_RETURN, RES_MIXED}res_kind_t;
+
+typedef struct {
+  res_kind_t kind;
+  data_type_t type;
+  bool all_unit;
+}result_t;
 
 static bool compatible(data_type_t expected, data_type_t actual) {
   if (expected == TYPE_ANY) {
@@ -283,8 +292,12 @@ int add_func(Node *n, symtable_t *st) {
   symbol_t *func = NULL;
   st_status_t status =
       symtable_insert_func(st, n->as.func.name, from_tree(n->as.func.ret), &func);
-  if (status == ST_ERR_NO_SCOPE || status == ST_ERR_REDEF) {
+
+  if (status == ST_ERR_REDEF) {
     return 4;
+  }
+  if (status == ST_ERR_NO_SCOPE) {
+    return INTERNAL_ERROR;
   }
   if (status == ST_ERR_MEMORY) {
     return INTERNAL_ERROR;
@@ -301,6 +314,12 @@ int check_func(Node *n, symtable_t *st) {
   if (!symtable_push_scope(st)) {
     return INTERNAL_ERROR;
   }
+
+  if (n->as.func.ret!= D_UNKNOWN) {
+    retExplicit = true;
+  }else {
+    retExplicit = false;
+  }
   for (int i = 0; i < n->as.func.nparams; i++) {
     st_status_t statusVar = symtable_insert_var(
         st, n->as.func.params[i].name, from_tree(n->as.func.params[i].type), false, NULL);
@@ -315,6 +334,8 @@ int check_func(Node *n, symtable_t *st) {
   }
   data_type_t prevReturn = expReturn;
   expReturn = from_tree(n->as.func.ret);
+  bool prevRetExplicit = retExplicit;
+  retExplicit = (n->as.func.ret != D_UNKNOWN);
   int err = 0;
 
   for (int i = 0; i < n->as.func.body->as.block.count; i++) {
@@ -325,6 +346,7 @@ int check_func(Node *n, symtable_t *st) {
   }
 
   expReturn = prevReturn;
+  retExplicit = prevRetExplicit;
   symtable_pop_scope(st);
   return err;
 }
@@ -345,47 +367,46 @@ int check_program(Node *n, symtable_t *st) {
   }
   return 0;
 }
-/*
- *  Pouziti Ai pro dopsani funkce check_return model Gemini 4 Hydrogen Thinking
- *  promt:
-* dopis mi funkci check_return z tohoto za pouziti staticke promene epxReturn
 
 int check_return(Node *n, symtable_t *st) {
-  if (expReturn !=n->as.ret.value->dataType) {
-    fprintf(stderr,"Chyba (radek %d): Neschoda navratoveho typu");
-  }
-  return 0;
-}
-*/
 
-int check_return(Node *n, symtable_t *st) {
-  // 1. Prázdný příkaz "return;" (bez výrazu) -> vrací TYPE_UNIT
   if (n->as.ret.value == NULL) {
-    if (expReturn != TYPE_UNIT && expReturn != TYPE_UNKNOWN) {
+    if (expReturn != TYPE_UNIT ) {
       fprintf(stderr, "Chyba (radek %d): Neschoda navratoveho typu\n", n->line);
       return 6;
     }
     set_type(n, TYPE_UNIT);
     return 0;
   }
-
-  // 2. Vyhodnotíme výraz za "return", aby se mu doplnil dataType
   int err = check_node(n->as.ret.value, st);
   if (err != 0) {
     return err;
   }
+  data_type_t val_type = get_type(n->as.ret.value);
+  
+  if (retExplicit == false) {
+    fprintf(stderr, "Chyba (radek %d): Neschoda navratoveho typu\n", n->line);
+    return 6;
+  }
+  if (expReturn == TYPE_UNIT) {
+    set_type(n, TYPE_UNIT);
+    return 0;
+  }
 
-  // 3. Porovnáme typ výrazu s očekávaným návratovým typem funkce
-  data_type_t valType = get_type(n->as.ret.value);
-  if (expReturn != TYPE_UNKNOWN && !compatible(expReturn, valType)) {
+  if (get_type(n->as.ret.value) == TYPE_UNKNOWN) {
+    fprintf(stderr, "Chyba (radek %d): Neschoda navratoveho typu\n", n->line);
+    return 6;
+  }
+  if (!compatible(expReturn, get_type(n->as.ret.value))) {
     fprintf(stderr, "Chyba (radek %d): Neschoda navratoveho typu\n", n->line);
     return 6;
   }
 
-  set_type(n, valType);
+
+  set_type(n, val_type);
   return 0;
 }
-// konec ai kodu
+
 int check_call(Node *n, symtable_t *st) {
   int err = 0;
   symbol_t *symbol = symtable_find_func(st, n->as.call.name);
