@@ -19,7 +19,11 @@ static int paren = 0; // pocet ( na radku
 static int indent_stack[INDENT_MAX] = {0}; // odsazeni
 static int indent_top = 0;     // vrchol indentu / chova se jako lifo fronta
 static int pending_dedent = 0; // kolik )) jeste zbyva vratit
+// pomocne pro rozsireni INTERPOLATEDS
 static int last_eol = 1;
+static int istr = 0;
+static int istr_expr = 0;
+static int istr_pending_end = 0;
 
 typedef enum { // podobně jako v token.h - jedná se o jakousi kolekci VŠECH
                // stavů, do které se může konečný automat dostat
@@ -63,6 +67,11 @@ typedef enum { // podobně jako v token.h - jedná se o jakousi kolekci VŠECH
   S_ESC,
   S_STR,
   S_STR_END,
+  S_ISTR_OPEN,
+  S_ISTR_OPEN2,
+  S_ISTR_TEXT,
+  S_ISTR_DOLLAR,
+  S_ISTR_ID,
 
 } State;
 
@@ -129,6 +138,17 @@ int get_token(Token *t) {
     t->type = TOKEN_DEDENT;
     t->line = line;
     return 0;
+  }
+  if (istr_pending_end) { // rozsireni pro INTERPOLADES
+    istr_pending_end = 0;
+    t->type = TOKEN_ISTR_END;
+    t->line = line;
+    return 0;
+  }
+
+  if (istr != 0 && !istr_expr) {
+    t->line = line;
+    state = S_ISTR_TEXT;
   }
 
   while (1) {
@@ -306,6 +326,11 @@ int get_token(Token *t) {
         t->type = TOKEN_SEMICOLON;
         return 0;
       }
+      else if (c == '}' && istr_expr) {
+        istr_expr = 0;
+        t->type = TOKEN_ISTR_EXPR_END;
+        return 0;
+      }
       // neznámý znak
       else
         return 1;
@@ -424,7 +449,14 @@ int get_token(Token *t) {
       if ((c >= '0' && c <= '9') ||
           ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) || c == '_') {
         buf[len++] = c;
+      }
+      else if (c == '"' && len == 1 && buf[0] == 's') {
+        len = 0;
+        state = S_ISTR_OPEN;
       } else {
+        ungetc(c, stdin);          // o char zpět
+      }
+      else {
         ungetc(c, stdin);          // o char zpět
         buf[len] = '\0';           // ukončení slova
         t->type = keyword(buf);    // TOKEN_WHILE, TOKEN_IF, … nebo TOKEN_ID
@@ -750,6 +782,99 @@ int get_token(Token *t) {
       } else {
         ungetc(c, stdin);
         t->type = TOKEN_GT;
+        return 0;
+      }
+      break;
+         case S_ISTR_OPEN:
+      if (c == '"') {
+        state = S_ISTR_OPEN2;
+      } else {
+        ungetc(c, stdin);
+        istr = 1;
+        t->type = TOKEN_ISTR_START;
+        return 0;
+      }
+      break;
+
+    case S_ISTR_OPEN2:
+      if (c == '"') {
+        istr = 2;
+      } else {
+        ungetc(c, stdin);
+        istr_pending_end = 1;
+      }
+      t->type = TOKEN_ISTR_START;
+      return 0;
+
+    case S_ISTR_TEXT:
+      if (c == '$') {
+        if (len > 0) {
+          ungetc(c, stdin);
+          buf[len] = '\0';
+          t->type = TOKEN_STRING;
+          t->stringValue = malloc(len + 1);
+          if (t->stringValue == NULL)
+            return 99;
+          strcpy(t->stringValue, buf);
+          return 0;
+        }
+        state = S_ISTR_DOLLAR;
+      } else if (c == '"' && istr == 2) {
+        state = S_ML_Q1;
+      } else if (c == '"') {
+        istr = 0;
+        if (len == 0) {
+          t->type = TOKEN_ISTR_END;
+          return 0;
+        }
+        istr_pending_end = 1;
+        buf[len] = '\0';
+        t->type = TOKEN_STRING;
+        t->stringValue = malloc(len + 1);
+        if (t->stringValue == NULL)
+          return 99;
+        strcpy(t->stringValue, buf);
+        return 0;
+      } else if (c == '\\' && istr == 1) {
+        state = S_ESC;
+      } else if (c == EOF || (c == '\n' && istr == 1)) {
+        return 1;
+      } else {
+        if (c == '\n')
+          line++;
+        buf[len++] = c;
+      }
+      break;
+
+    case S_ISTR_DOLLAR:
+      if (c == '$') {
+        buf[len++] = c;
+        state = S_ISTR_TEXT;
+      } else if (c == '{') {
+        istr_expr = 1;
+        t->type = TOKEN_ISTR_EXPR_START;
+        return 0;
+      } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_') {
+        buf[len++] = c;
+        state = S_ISTR_ID;
+      } else
+        return 1;
+      break;
+
+    case S_ISTR_ID:
+      if ((c >= '0' && c <= '9') ||
+          ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) || c == '_') {
+        buf[len++] = c;
+      } else {
+        ungetc(c, stdin);
+        buf[len] = '\0';
+        if (keyword(buf) != TOKEN_ID || strcmp(buf, "_") == 0)
+          return 1;
+        t->type = TOKEN_ID;
+        t->stringValue = malloc(len + 1);
+        if (t->stringValue == NULL)
+          return 99;
+        strcpy(t->stringValue, buf);
         return 0;
       }
       break;
