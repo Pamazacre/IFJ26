@@ -10,9 +10,10 @@
 #include "../Tree/tree.h"
 #include "../symtable.h"
 
+#include <string.h>
 
 #define INTERNAL_ERROR 99
-
+int check_func(Node *n);
 static int check_node(Node *n, symtable_t *st);
 int check_return(Node *n, symtable_t *st);
 
@@ -53,6 +54,28 @@ static DataType to_tree(data_type_t t) {
     default:
       return D_UNKNOWN;
   }
+}
+typedef enum {
+  FUNC_UNCHECKED = 0,
+  FUNC_CHECKING = 1,
+  FUNC_DONE = 2,
+}func_status_t;
+
+static symtable_t *global_st = NULL;
+static Node *current_prog = NULL;
+static func_status_t *func_states = NULL;
+
+
+int find_func_idx(char *name) {
+  if (global_st == NULL) {
+    return -INTERNAL_ERROR;
+  }
+  for (int i = 0; i < current_prog->as.program.count; i++) {
+    if (strcmp(name, current_prog->as.program.funcs[i]->as.func.name) == 0) {
+      return i;
+    }
+  }
+  return -INTERNAL_ERROR;
 }
 
 static data_type_t get_type(Node *n) {
@@ -111,7 +134,11 @@ int check_vardef(Node *n, symtable_t *st) {
     if (err) {
       return err;
     }
+
     data_type_t initType = get_type(n->as.vardef.init);
+    if (initType == TYPE_BOOLEAN || finalType == TYPE_BOOLEAN) {
+      return 6;
+    }
     if (finalType == TYPE_UNKNOWN) {
       finalType = initType;
     }
@@ -146,10 +173,8 @@ int check_var(Node *n, symtable_t *st) {
       set_type(n, symbol->var.type);
       return 0;
     }
-  } else {
-    fprintf(stderr, "Chyba (radek %d): Promenna nema jmeno\n", n->line);
-    return 10;
   }
+  return INTERNAL_ERROR;
 }
 int check_assign(Node *n, symtable_t *st) {
   if (n->as.assign.name != NULL) {
@@ -380,6 +405,25 @@ int check_stms(Node **stms, symtable_t *st,int count, result_t *res) {
   }
   return err;
 }
+int ensure_checked(int idx) {
+  if (func_states == NULL) {
+    return INTERNAL_ERROR;
+  }
+  if (func_states[idx] == FUNC_DONE) {
+    return 0;
+  }
+  if (func_states[idx] == FUNC_CHECKING) {
+    fprintf(stderr, "Chyba (radek %d): Rekurzivni volani funkce bez navratoveho typu\n", current_prog->as.program.funcs[idx]->line);
+    return 6;
+  }
+  func_states[idx] = FUNC_CHECKING;
+  int err = check_func(current_prog->as.program.funcs[idx]);
+  if (err != 0) {
+    return err;
+  }
+  func_states[idx] = FUNC_DONE;
+  return 0;
+}
 
 int add_func(Node *n, symtable_t *st) {
   symbol_t *func = NULL;
@@ -403,11 +447,11 @@ int add_func(Node *n, symtable_t *st) {
   }
   return 0;
 }
-int check_body_result(Node *n, result_t *res, symtable_t *st) {
+int check_body_result(Node *n, result_t *res) {
   data_type_t final_type = expReturn;
 
   if (!retExplicit) {
-    if (res->kind == RES_VALUE) {
+    if (res->kind == RES_VALUE && res->type != TYPE_UNKNOWN && res->type != TYPE_BOOLEAN) {
       final_type = res->type;
     } else if (res->kind == RES_MIXED && res->all_unit) {
       final_type = TYPE_UNIT;
@@ -417,7 +461,7 @@ int check_body_result(Node *n, result_t *res, symtable_t *st) {
     }
 
     n->as.func.ret = to_tree(final_type);
-    symbol_t *sym = symtable_find_func(st, n->as.func.name);
+    symbol_t *sym = symtable_find_func(global_st, n->as.func.name);
     if (sym == NULL) {
       return INTERNAL_ERROR;
     }
@@ -443,20 +487,24 @@ int check_body_result(Node *n, result_t *res, symtable_t *st) {
 
   return 0;
 }
-int check_func(Node *n, symtable_t *st) {
-  if (!symtable_push_scope(st)) {
+int check_func(Node *n) {
+  symtable_t *local_st = symtable_create();
+  if (local_st == NULL) {
+    return INTERNAL_ERROR;
+  }
+  if (!symtable_push_scope(local_st)) {
     return INTERNAL_ERROR;
   }
 
   for (int i = 0; i < n->as.func.nparams; i++) {
     st_status_t statusVar = symtable_insert_var(
-        st, n->as.func.params[i].name, from_tree(n->as.func.params[i].type), false, NULL);
+        local_st, n->as.func.params[i].name, from_tree(n->as.func.params[i].type), false, NULL);
     if (statusVar == ST_ERR_REDEF) {
-      symtable_pop_scope(st);
+      symtable_pop_scope(local_st);
       return 4;
     }
     if (statusVar != ST_OK) {
-      symtable_pop_scope(st);
+      symtable_pop_scope(local_st);
       return INTERNAL_ERROR;
     }
   }
@@ -466,34 +514,54 @@ int check_func(Node *n, symtable_t *st) {
   retExplicit = (n->as.func.ret != D_UNKNOWN);
   result_t bodyRes;
 
-  int err = check_stms(n->as.func.body->as.block.stmts, st, n->as.func.body->as.block.count, &bodyRes);
+  int err = 0;
+  if (n->as.func.body == NULL) {
+    err = INTERNAL_ERROR;
+  }else if (n->as.func.body->kind == N_BLOCK) {
+    err = check_stms(n->as.func.body->as.block.stmts, local_st, n->as.func.body->as.block.count, &bodyRes);
+  }else {
+    err = check_stmt(n->as.func.body, local_st,&bodyRes);
+  }
   if (err != 0) {
     expReturn = prevReturn;
     retExplicit = prevRetExplicit;
-    symtable_pop_scope(st);
+    symtable_pop_scope(local_st);
     return err;
   }
-  err = check_body_result(n->as.func.body, &bodyRes, st);
+  err = check_body_result(n, &bodyRes);
   expReturn = prevReturn;
   retExplicit = prevRetExplicit;
-  symtable_pop_scope(st);
+  symtable_pop_scope(local_st);
+  symtable_free(local_st);
   return err;
 }
 int check_program(Node *n, symtable_t *st) {
 
   int err;
+  if (n->as.program.count > 0) {
+    func_states = calloc((size_t)n->as.program.count, sizeof(func_status_t));
+    if (func_states == NULL) {
+      return INTERNAL_ERROR;
+    }
+  }
   for (int i = 0; i < n->as.program.count; i++) {
     err = add_func(n->as.program.funcs[i], st);
     if (err != 0) {
+      free(func_states);
+      func_states = NULL;
       return err;
     }
   }
   for (int i = 0; i < n->as.program.count; i++) {
-    err = check_func(n->as.program.funcs[i], st);
+    err = ensure_checked(i);
     if (err != 0) {
+      free(func_states);
+      func_states = NULL;
       return err;
     }
   }
+  free(func_states);
+  func_states = NULL;
   return 0;
 }
 
@@ -538,7 +606,7 @@ int check_return(Node *n, symtable_t *st) {
 
 int check_call(Node *n, symtable_t *st) {
   int err = 0;
-  symbol_t *symbol = symtable_find_func(st, n->as.call.name);
+  symbol_t *symbol = symtable_find_func(global_st, n->as.call.name);
   if (symbol == NULL) {
     fprintf(stderr, "Chyba (radek %d): Volani nedefinovane funkce %s\n", n->line, n->as.call.name);
     return 3;
@@ -558,6 +626,15 @@ int check_call(Node *n, symtable_t *st) {
       fprintf(stderr, "Chyba (radek %d): Neschodny datatype argumentu funkce %s\n", n->line,
               n->as.call.name);
       return 5;
+    }
+  }
+  if (symbol->func.ret_type == TYPE_UNKNOWN) {
+    int idx =find_func_idx(n->as.call.name);
+    if (idx >= 0) {
+      err = ensure_checked(idx);
+      if (err != 0) {
+        return err;
+      }
     }
   }
   set_type(n, symbol->func.ret_type);
@@ -601,7 +678,7 @@ int check_node(Node *n, symtable_t *st) {
     case N_BLOCK:
       return check_block(n, st, &ignored);
     case N_FUNC:
-      return check_func(n, st);
+      return check_func(n);
     case N_BINOP:
       return check_binop(n, st);
     case N_CALL:
@@ -641,7 +718,7 @@ int check_main(Node *n) {
         fprintf(stderr, "Chyba (radek %d): V definici main je parametr\n", n->line);
         return 5;
       }
-      if (from_tree(n->as.program.funcs[i]->as.func.ret) != TYPE_UNIT) {
+      if (from_tree(n->as.program.funcs[i]->as.func.ret) != TYPE_UNIT &&from_tree(n->as.program.funcs[i]->as.func.ret) != TYPE_UNKNOWN) {
         fprintf(stderr, "Chyba (radek %d): V return type main neni Unit\n", n->line);
         return 6;
       }
@@ -660,12 +737,14 @@ int check_main(Node *n) {
 
 int analyze(Node *prog) {
   symtable_t *st = symtable_create();
-
   if (st == NULL) {
     fprintf(stderr, "Chyba vytvareni symtable\n");
     return INTERNAL_ERROR;
     // chyba alokace
   }
+
+  global_st = st;
+  current_prog = prog;
   if (!symtable_insert_builtins(st)) {
     symtable_free(st);
     fprintf(stderr, "Chyba vlozeni vestavnych funkci\n");
@@ -681,7 +760,8 @@ int analyze(Node *prog) {
   } else {
     err = check_node(prog, st);
   }
-
+  current_prog = NULL;
+  global_st = NULL;
   symtable_free(st);
   return err;
 }
