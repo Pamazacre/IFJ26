@@ -60,11 +60,19 @@ typedef enum {
   TOKEN_SEMICOLON, // KLíčové slovo: ;
   TOKEN_DOT,       // KLíčové slovo: .
 
-  //interpovolavne retezce - rozsireni pro INTERPOLATEDS
+  // interpovolavne retezce - rozsireni pro INTERPOLATEDS
   TOKEN_ISTR_START,
   TOKEN_ISTR_END,
   TOKEN_ISTR_EXPR_START,
   TOKEN_ISTR_EXPR_END,
+
+  // pravdivostní hodnoty - rozsireni pro boolean
+  TOKEN_TYPE_BOOLEAN,
+  TOKEN_TRUE,    // Klíčová hodnota bool - true
+  TOKEN_FALSE,   // Klíčová hodnota bool - false
+  TOKEN_NOT,     // Klíčová hodnota bool - NOT
+  TOKEN_AND,     // Klíčová hodnota bool - AND
+  TOKEN_OR,      // Klíčová hodnota bool - OR
 
 } TokenType;
 
