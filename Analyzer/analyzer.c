@@ -14,6 +14,7 @@
 #define INTERNAL_ERROR 99
 
 static int check_node(Node *n, symtable_t *st);
+int check_return(Node *n, symtable_t *st);
 
 /* kvuli kompatibilite mezi symtable.c a tree.c jsem ji vytvoril nasledujici
  * pouzil jsem ai protoze jsem nechtel prepisovat rucne vsude kde mam neco s datype
@@ -72,6 +73,29 @@ typedef struct {
   data_type_t type;
   bool all_unit;
 }result_t;
+
+int check_stms(Node **stms, symtable_t *st,int count,result_t *res);
+result_t res_return() {
+  result_t res;
+  res.type = TYPE_UNIT;
+  res.kind = RES_RETURN;
+  res.all_unit = true;
+  return res;
+}
+result_t res_value(data_type_t type) {
+  result_t res;
+  res.type = type;
+  res.kind = RES_VALUE;
+  res.all_unit = false;
+  return res;
+}
+result_t res_mixed(bool is_unit) {
+  result_t res;
+  res.type = TYPE_UNKNOWN;
+  res.kind = RES_MIXED;
+  res.all_unit = is_unit;
+  return res;
+}
 
 static bool compatible(data_type_t expected, data_type_t actual) {
   if (expected == TYPE_ANY) {
@@ -233,20 +257,14 @@ int check_binop(Node *n, symtable_t *st) {
 /* projde blok a zavola nad kazdym nejvechrnejsim check node
  * ten mu vrati datatype ktery muze kontrolovat */
 
-int check_block(Node *n, symtable_t *st) {
+int check_block(Node *n, symtable_t *st, result_t *res) {
   if (!symtable_push_scope(st))
     return INTERNAL_ERROR;
-  for (int i = 0; i < n->as.block.count; i++) {
-    int err = check_node(n->as.block.stmts[i], st);
-    if (err != 0) {
-      symtable_pop_scope(st);
-      return err;
-    }
-  }
+  int err =  check_stms(n->as.block.stmts, st, n->as.block.count, res);
   symtable_pop_scope(st);
-  return 0;
+  return err;
 }
-int check_while(Node *n, symtable_t *st) {
+int check_while(Node *n, symtable_t *st,result_t *res) {
   int err = 0;
   err = check_node(n->as.while_.cond, st);
   if (err != 0) {
@@ -257,15 +275,24 @@ int check_while(Node *n, symtable_t *st) {
   if (condDT != TYPE_BOOLEAN) {
     return 6;
   }
-  err = check_block(n->as.while_.body, st);
+  err = check_block(n->as.while_.body, st, res);
   if (err != 0) {
     return err;
   }
   return 0;
 }
-// zkontroluje podminku a blok then a pokud existuje else tak zkontroluje to
-int check_if(Node *n, symtable_t *st) {
+
+
+bool branch_is_unit(result_t r) {
+  if (r.kind == RES_RETURN) return true;
+  if (r.kind == RES_VALUE)  return r.type == TYPE_UNIT;
+  return r.all_unit;
+}
+/* zkontroluje podminku a blok then a pokud existuje else tak zkontroluje to
+ *  take zkouma zda maji stejny return type */
+int check_if(Node *n, symtable_t *st, result_t *res) {
   int err = 0;
+  result_t thenRes,elseRes = res_value(TYPE_UNIT);
 
   err = check_node(n->as.if_.cond, st);
   if (err != 0) {
@@ -275,17 +302,83 @@ int check_if(Node *n, symtable_t *st) {
     fprintf(stderr, "Chyba (radek %d): Podminka neni typu Boolean\n", n->line);
     return 6;
   }
-  err = check_block(n->as.if_.then_b, st);
+  err = check_block(n->as.if_.then_b, st, &thenRes);
   if (err != 0) {
     return err;
   }
-  if (n->as.if_.else_b != NULL) {
-    err = check_block(n->as.if_.else_b, st);
+  if (n->as.if_.else_b != NULL && n->as.if_.else_b->kind == N_BLOCK) {
+    err = check_block(n->as.if_.else_b, st, &elseRes);
     if (err != 0) {
       return err;
     }
   }
+  else if (n->as.if_.else_b ==NULL) {
+    elseRes = res_value(TYPE_UNIT);
+  }
+  else{
+    err = check_if(n->as.if_.else_b, st, &elseRes);
+    if (err != 0) {
+      return err;
+    }
+  }
+  // pokud jsou return vrati return pokud jsou jine vrati mixed
+  if (thenRes.kind == RES_RETURN && elseRes.kind == RES_RETURN) {
+    *res = res_return();
+  } else {
+    *res = res_mixed(branch_is_unit(thenRes) && branch_is_unit(elseRes));
+  }
+
   return 0;
+}
+
+int check_stmt(Node *n, symtable_t *st,result_t *res) {
+  int err;
+  switch (n->kind) {
+    case N_RETURN:
+      err = check_return(n, st);
+      if (err != 0) {
+        return err;
+      }
+      *res = res_return();
+      return 0;
+
+    case N_IF:
+      return check_if(n, st, res);
+
+    case N_BLOCK:
+      return check_block(n, st, res);
+
+    case N_VARDEF:
+    case N_ASSIGN:
+    case N_WHILE:
+      err = check_node(n, st);
+      if (err != 0) {
+        return err;
+      }
+      *res = res_value(TYPE_UNIT);
+      return 0;
+
+    default:
+
+      err = check_node(n, st);
+      if (err != 0) {
+        return err;
+      }
+      *res = res_value(get_type(n));
+      return 0;
+  }
+}
+
+int check_stms(Node **stms, symtable_t *st,int count, result_t *res) {
+  int err = 0;
+  *res = res_value(TYPE_UNIT);
+  for (int i = 0; i < count; i++) {
+    err = check_stmt(stms[i], st, res);
+    if (err != 0) {
+      return err;
+    }
+  }
+  return err;
 }
 
 int add_func(Node *n, symtable_t *st) {
@@ -310,16 +403,51 @@ int add_func(Node *n, symtable_t *st) {
   }
   return 0;
 }
+int check_body_result(Node *n, result_t *res, symtable_t *st) {
+  data_type_t final_type = expReturn;
+
+  if (!retExplicit) {
+    if (res->kind == RES_VALUE) {
+      final_type = res->type;
+    } else if (res->kind == RES_MIXED && res->all_unit) {
+      final_type = TYPE_UNIT;
+    } else {
+      fprintf(stderr, "Chyba (radek %d): Nelze odvodit navratovy typ funkce\n", n->line);
+      return 6;
+    }
+
+    n->as.func.ret = to_tree(final_type);
+    symbol_t *sym = symtable_find_func(st, n->as.func.name);
+    if (sym == NULL) {
+      return INTERNAL_ERROR;
+    }
+    sym->func.ret_type = final_type;
+
+  } else if (expReturn == TYPE_UNIT) {
+
+    final_type = TYPE_UNIT;
+
+  } else {
+    bool ok = (res->kind == RES_RETURN) ||
+              (res->kind == RES_VALUE && compatible(expReturn, res->type));
+    if (!ok) {
+      fprintf(stderr, "Chyba (radek %d): Neschoda navratoveho typu\n", n->line);
+      return 6;
+    }
+  }
+
+  if (n->as.func.is_main && final_type != TYPE_UNIT) {
+    fprintf(stderr, "Chyba (radek %d): funkce main musi vracet unit\n", n->line);
+    return 6;
+  }
+
+  return 0;
+}
 int check_func(Node *n, symtable_t *st) {
   if (!symtable_push_scope(st)) {
     return INTERNAL_ERROR;
   }
 
-  if (n->as.func.ret!= D_UNKNOWN) {
-    retExplicit = true;
-  }else {
-    retExplicit = false;
-  }
   for (int i = 0; i < n->as.func.nparams; i++) {
     st_status_t statusVar = symtable_insert_var(
         st, n->as.func.params[i].name, from_tree(n->as.func.params[i].type), false, NULL);
@@ -336,15 +464,16 @@ int check_func(Node *n, symtable_t *st) {
   expReturn = from_tree(n->as.func.ret);
   bool prevRetExplicit = retExplicit;
   retExplicit = (n->as.func.ret != D_UNKNOWN);
-  int err = 0;
+  result_t bodyRes;
 
-  for (int i = 0; i < n->as.func.body->as.block.count; i++) {
-    err = check_node(n->as.func.body->as.block.stmts[i], st);
-    if (err != 0) {
-      break;
-    }
+  int err = check_stms(n->as.func.body->as.block.stmts, st, n->as.func.body->as.block.count, &bodyRes);
+  if (err != 0) {
+    expReturn = prevReturn;
+    retExplicit = prevRetExplicit;
+    symtable_pop_scope(st);
+    return err;
   }
-
+  err = check_body_result(n->as.func.body, &bodyRes, st);
   expReturn = prevReturn;
   retExplicit = prevRetExplicit;
   symtable_pop_scope(st);
@@ -383,7 +512,7 @@ int check_return(Node *n, symtable_t *st) {
     return err;
   }
   data_type_t val_type = get_type(n->as.ret.value);
-  
+
   if (retExplicit == false) {
     fprintf(stderr, "Chyba (radek %d): Neschoda navratoveho typu\n", n->line);
     return 6;
@@ -454,7 +583,7 @@ int check_unop(Node *n, symtable_t *st) {
 }
 
 int check_node(Node *n, symtable_t *st) {
-
+  result_t ignored;
   switch (n->kind) {
 
     case N_ASSIGN:
@@ -464,13 +593,13 @@ int check_node(Node *n, symtable_t *st) {
     case N_VAR:
       return check_var(n, st);
     case N_IF:
-      return check_if(n, st);
+      return check_if(n, st, &ignored);
     case N_WHILE:
-      return check_while(n, st);
+      return check_while(n, st, &ignored);
     case N_PROGRAM:
       return check_program(n, st);
     case N_BLOCK:
-      return check_block(n, st);
+      return check_block(n, st, &ignored);
     case N_FUNC:
       return check_func(n, st);
     case N_BINOP:
