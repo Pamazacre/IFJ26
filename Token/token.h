@@ -60,6 +60,12 @@ typedef enum {
   TOKEN_SEMICOLON, // KLíčové slovo: ;
   TOKEN_DOT,       // KLíčové slovo: .
 
+  //interpovolavne retezce - rozsireni pro INTERPOLATEDS
+  TOKEN_ISTR_START,
+  TOKEN_ISTR_END,
+  TOKEN_ISTR_EXPR_START,
+  TOKEN_ISTR_EXPR_END,
+
 } TokenType;
 
 typedef struct { // sem dát všechny možné prvky, které jakýkoliv token
