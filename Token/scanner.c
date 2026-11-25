@@ -19,8 +19,8 @@ static int paren = 0; // pocet ( na radku
 static int indent_stack[INDENT_MAX] = {0}; // odsazeni
 static int indent_top = 0;     // vrchol indentu / chova se jako lifo fronta
 static int pending_dedent = 0; // kolik )) jeste zbyva vratit
-// pomocne pro rozsireni INTERPOLATEDS
 static int last_eol = 1;
+// pomocne pro rozsireni INTERPOLATEDS
 static int istr = 0;
 static int istr_expr = 0;
 static int istr_pending_end = 0;
@@ -28,7 +28,7 @@ static int istr_pending_end = 0;
 typedef enum { // podobně jako v token.h - jedná se o jakousi kolekci VŠECH
                // stavů, do které se může konečný automat dostat
                //-> místo tedy několik vnořených funkcí bude potom jen jeden
-               //velký switch, kde v podstatě jednotlivé stavy budou definovány
+               // velký switch, kde v podstatě jednotlivé stavy budou definovány
 
   S_START, /*Začátek každého slova - rozřazení do jednoho z pěti základních
               "stromů"*/
@@ -325,8 +325,7 @@ int get_token(Token *t) {
       else if (c == ';') {
         t->type = TOKEN_SEMICOLON;
         return 0;
-      }
-      else if (c == '}' && istr_expr) {
+      } else if (c == '}' && istr_expr) {
         istr_expr = 0;
         t->type = TOKEN_ISTR_EXPR_END;
         return 0;
@@ -449,14 +448,10 @@ int get_token(Token *t) {
       if ((c >= '0' && c <= '9') ||
           ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) || c == '_') {
         buf[len++] = c;
-      }
-      else if (c == '"' && len == 1 && buf[0] == 's') {
+      } else if (c == '"' && len == 1 && buf[0] == 's') {
         len = 0;
         state = S_ISTR_OPEN;
       } else {
-        ungetc(c, stdin);          // o char zpět
-      }
-      else {
         ungetc(c, stdin);          // o char zpět
         buf[len] = '\0';           // ukončení slova
         t->type = keyword(buf);    // TOKEN_WHILE, TOKEN_IF, … nebo TOKEN_ID
@@ -590,7 +585,7 @@ int get_token(Token *t) {
         buf[len++] = '"';
       else
         return 1;
-      state = S_STR;
+      state = (istr && !istr_expr) ? S_ISTR_TEXT : S_STR;
       break;
 
     case S_STR:
@@ -634,7 +629,7 @@ int get_token(Token *t) {
       else {
         ungetc(c, stdin);
         buf[len++] = '"';
-        state = S_ML;
+        state = (istr && !istr_expr) ? S_ISTR_TEXT : S_ML;
       }
       break;
 
@@ -653,6 +648,21 @@ int get_token(Token *t) {
     case S_ML_END:
       if (c == '"') {
         buf[len++] = c;
+      } else if (istr && !istr_expr) {
+        ungetc(c, stdin);
+        istr = 0;
+        if (len == 0) {
+          t->type = TOKEN_ISTR_END;
+          return 0;
+        }
+        istr_pending_end = 1;
+        buf[len] = '\0';
+        t->type = TOKEN_STRING;
+        t->stringValue = malloc(len + 1);
+        if (t->stringValue == NULL)
+          return 99;
+        strcpy(t->stringValue, buf);
+        return 0;
       } else {
         ungetc(c, stdin);
         buf[len] = '\0';
@@ -785,7 +795,7 @@ int get_token(Token *t) {
         return 0;
       }
       break;
-         case S_ISTR_OPEN:
+    case S_ISTR_OPEN:
       if (c == '"') {
         state = S_ISTR_OPEN2;
       } else {
