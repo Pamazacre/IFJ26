@@ -1,22 +1,70 @@
 // xsmrckt00
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-// #include "parser.h"
-#include "../Analyzer/analyzer.h"
+
+#include "analyzer.h"
 #include "../Tree/tree.h"
 #include "../symtable.h"
 
-#include <string.h>
 
 #define INTERNAL_ERROR 99
 
 static int check_node(Node *n, symtable_t *st);
-static DataType expReturn = TYPE_UNKNOWN;
 
-int compatible(DataType expected, DataType actual) {
+/* kvuli kompatibilite mezi symtable.c a tree.c jsem ji vytvoril nasledujici
+ * pouzil jsem ai protoze jsem nechtel prepisovat rucne vsude kde mam neco s datype
+ * claude Sonnet 5.5 Medium
+ * pridej a pouprav cely soubor pro kompabilitu datatype mezi symtable a tree.c
+ */
+static data_type_t from_tree(DataType t) {
+  switch (t) {
+    case D_INT:
+      return TYPE_INT;
+    case D_FLOAT:
+      return TYPE_DOUBLE;
+    case D_STRING:
+      return TYPE_STRING;
+    case D_BOOL:
+      return TYPE_BOOLEAN;
+    case D_UNIT:
+      return TYPE_UNIT;
+    default:
+      return TYPE_UNKNOWN;
+  }
+}
+
+static DataType to_tree(data_type_t t) {
+  switch (t) {
+    case TYPE_INT:
+      return D_INT;
+    case TYPE_DOUBLE:
+      return D_FLOAT;
+    case TYPE_STRING:
+      return D_STRING;
+    case TYPE_BOOLEAN:
+      return D_BOOL;
+    case TYPE_UNIT:
+      return D_UNIT;
+    default:
+      return D_UNKNOWN;
+  }
+}
+
+static data_type_t get_type(Node *n) {
+  return from_tree(n->dataType);
+}
+
+static void set_type(Node *n, data_type_t t) {
+  n->dataType = to_tree(t);
+}
+
+static data_type_t expReturn = TYPE_UNKNOWN;
+
+static bool compatible(data_type_t expected, data_type_t actual) {
   if (expected == TYPE_ANY) {
     return true;
   }
@@ -24,16 +72,17 @@ int compatible(DataType expected, DataType actual) {
 }
 
 int check_vardef(Node *n, symtable_t *st) {
-  DataType finalType = n->as.vardef.declared;
+  data_type_t finalType = from_tree(n->as.vardef.declared);
   if (n->as.vardef.init != NULL) {
     int err = check_node(n->as.vardef.init, st);
     if (err) {
       return err;
     }
+    data_type_t initType = get_type(n->as.vardef.init);
     if (finalType == TYPE_UNKNOWN) {
-      finalType = n->as.vardef.init->dataType;
+      finalType = initType;
     }
-    if (!compatible(finalType, n->as.vardef.init->dataType)) {
+    if (!compatible(finalType, initType)) {
       return 6;
     }
   } else {
@@ -51,7 +100,7 @@ int check_vardef(Node *n, symtable_t *st) {
   if (status == ST_ERR_MEMORY || status == ST_ERR_NO_SCOPE) {
     return INTERNAL_ERROR;
   }
-  n->dataType = finalType;
+  set_type(n, finalType);
   return 0;
 }
 int check_var(Node *n, symtable_t *st) {
@@ -61,7 +110,7 @@ int check_var(Node *n, symtable_t *st) {
       fprintf(stderr, "Chyba (radek %d): Nedefinovana promenna %s \n", n->line, n->as.var.name);
       return 3;
     } else {
-      n->dataType = symbol->var.type;
+      set_type(n, symbol->var.type);
       return 0;
     }
   } else {
@@ -86,7 +135,7 @@ int check_assign(Node *n, symtable_t *st) {
               n->as.assign.name);
       return 7;
     }
-    if (!compatible(symbol->var.type, n->as.assign.value->dataType)) {
+    if (!compatible(symbol->var.type, get_type(n->as.assign.value))) {
       fprintf(stderr, "Chyba (radek %d): Nesedi datype promenne %s \n", n->as.assign.value->line,
               n->as.assign.name);
       return 6;
@@ -108,15 +157,15 @@ int check_binop(Node *n, symtable_t *st) {
     return err;
   }
 
-  DataType lt = n->as.binop.l->dataType;
-  DataType rt = n->as.binop.r->dataType;
+  data_type_t lt = get_type(n->as.binop.l);
+  data_type_t rt = get_type(n->as.binop.r);
   bool lNum = (lt == TYPE_INT || lt == TYPE_DOUBLE);
   bool rNum = (rt == TYPE_INT || rt == TYPE_DOUBLE);
 
-  DataType curr;
+  data_type_t curr;
   if (lNum && rNum) {
     curr = (lt == TYPE_DOUBLE || rt == TYPE_DOUBLE) ? TYPE_DOUBLE : TYPE_INT;
-  } else if (lt == rt && lt != TYPE_UNIT && lt != TYPE_UNKNOWN) {
+  } else if (lt == rt  && lt != TYPE_UNKNOWN) {
     curr = lt;
   } else {
     fprintf(stderr, "Chyba (radek %d): Nesedi datove typy \n", n->line);
@@ -130,7 +179,7 @@ int check_binop(Node *n, symtable_t *st) {
                 n->line, n->as.binop.op);
         return 6;
       }
-      n->dataType = curr;
+      set_type(n, curr);
       break;
     case TOKEN_MUL:
     case TOKEN_MINUS:
@@ -139,7 +188,7 @@ int check_binop(Node *n, symtable_t *st) {
                 n->line, n->as.binop.op);
         return 6;
       }
-      n->dataType = curr;
+      set_type(n, curr);
       break;
     case TOKEN_DIV:
       if (curr == TYPE_BOOLEAN || curr == TYPE_UNIT || curr == TYPE_STRING) {
@@ -147,21 +196,22 @@ int check_binop(Node *n, symtable_t *st) {
                 n->line, n->as.binop.op);
         return 6;
       }
-      n->dataType = curr;
+      set_type(n, curr);
       break;
     case TOKEN_GE:
     case TOKEN_LE:
     case TOKEN_GT:
     case TOKEN_LT:
-      if (curr == TYPE_BOOLEAN || curr == TYPE_UNIT ){
-        fprintf(stderr, "Chyba (radek %d): Nelze provezt operaci %d s timto datovym typem \n",n->line,n->as.binop.op);
+      if (curr == TYPE_BOOLEAN || curr == TYPE_UNIT) {
+        fprintf(stderr, "Chyba (radek %d): Nelze provezt operaci %d s timto datovym typem \n",
+                n->line, n->as.binop.op);
         return 6;
       }
-      n->dataType = TYPE_BOOLEAN;
+      set_type(n, TYPE_BOOLEAN);
       break;
     case TOKEN_EQ:
     case TOKEN_NEQ:
-      n->dataType = TYPE_BOOLEAN;
+      set_type(n, TYPE_BOOLEAN);
       break;
       // prostor pro rozsireni operatoru and or neg
 
@@ -171,7 +221,9 @@ int check_binop(Node *n, symtable_t *st) {
   }
   return 0;
 }
-// projde blok a zkontroluje kazdy jednotivy node v bloku
+/* projde blok a zavola nad kazdym nejvechrnejsim check node
+ * ten mu vrati datatype ktery muze kontrolovat */
+
 int check_block(Node *n, symtable_t *st) {
   if (!symtable_push_scope(st))
     return INTERNAL_ERROR;
@@ -192,7 +244,7 @@ int check_while(Node *n, symtable_t *st) {
 
     return err;
   }
-  DataType condDT = n->as.while_.cond->dataType;
+  data_type_t condDT = get_type(n->as.while_.cond);
   if (condDT != TYPE_BOOLEAN) {
     return 6;
   }
@@ -210,7 +262,7 @@ int check_if(Node *n, symtable_t *st) {
   if (err != 0) {
     return err;
   }
-  if (n->as.if_.cond->dataType != TYPE_BOOLEAN) {
+  if (get_type(n->as.if_.cond) != TYPE_BOOLEAN) {
     fprintf(stderr, "Chyba (radek %d): Podminka neni typu Boolean\n", n->line);
     return 6;
   }
@@ -229,7 +281,8 @@ int check_if(Node *n, symtable_t *st) {
 
 int add_func(Node *n, symtable_t *st) {
   symbol_t *func = NULL;
-  st_status_t status = symtable_insert_func(st, n->as.func.name, n->as.func.ret, &func);
+  st_status_t status =
+      symtable_insert_func(st, n->as.func.name, from_tree(n->as.func.ret), &func);
   if (status == ST_ERR_NO_SCOPE || status == ST_ERR_REDEF) {
     return 4;
   }
@@ -237,8 +290,8 @@ int add_func(Node *n, symtable_t *st) {
     return INTERNAL_ERROR;
   }
   for (int i = 0; i < n->as.func.nparams; i++) {
-    bool err = symtable_add_param(func, n->as.func.params[i].type);
-    if (!err) {
+    bool ok = symtable_add_param(func, from_tree(n->as.func.params[i].type));
+    if (!ok) {
       return INTERNAL_ERROR;
     }
   }
@@ -249,8 +302,8 @@ int check_func(Node *n, symtable_t *st) {
     return INTERNAL_ERROR;
   }
   for (int i = 0; i < n->as.func.nparams; i++) {
-    st_status_t statusVar =
-        symtable_insert_var(st, n->as.func.params[i].name, n->as.func.params[i].type, false, NULL);
+    st_status_t statusVar = symtable_insert_var(
+        st, n->as.func.params[i].name, from_tree(n->as.func.params[i].type), false, NULL);
     if (statusVar == ST_ERR_REDEF) {
       symtable_pop_scope(st);
       return 4;
@@ -260,8 +313,8 @@ int check_func(Node *n, symtable_t *st) {
       return INTERNAL_ERROR;
     }
   }
-  DataType prevReturn = expReturn;
-  expReturn = n->as.func.ret;
+  data_type_t prevReturn = expReturn;
+  expReturn = from_tree(n->as.func.ret);
   int err = 0;
 
   for (int i = 0; i < n->as.func.body->as.block.count; i++) {
@@ -304,8 +357,6 @@ int check_return(Node *n, symtable_t *st) {
   return 0;
 }
 */
-// Na začátek souboru analyzer.c (nad funkce):
-// static DataType expReturn = TYPE_UNKNOWN;
 
 int check_return(Node *n, symtable_t *st) {
   // 1. Prázdný příkaz "return;" (bez výrazu) -> vrací TYPE_UNIT
@@ -314,7 +365,7 @@ int check_return(Node *n, symtable_t *st) {
       fprintf(stderr, "Chyba (radek %d): Neschoda navratoveho typu\n", n->line);
       return 6;
     }
-    n->dataType = TYPE_UNIT;
+    set_type(n, TYPE_UNIT);
     return 0;
   }
 
@@ -325,12 +376,13 @@ int check_return(Node *n, symtable_t *st) {
   }
 
   // 3. Porovnáme typ výrazu s očekávaným návratovým typem funkce
-  if (expReturn != TYPE_UNKNOWN && !compatible(expReturn, n->as.ret.value->dataType)) {
+  data_type_t valType = get_type(n->as.ret.value);
+  if (expReturn != TYPE_UNKNOWN && !compatible(expReturn, valType)) {
     fprintf(stderr, "Chyba (radek %d): Neschoda navratoveho typu\n", n->line);
     return 6;
   }
 
-  n->dataType = n->as.ret.value->dataType;
+  set_type(n, valType);
   return 0;
 }
 // konec ai kodu
@@ -352,28 +404,31 @@ int check_call(Node *n, symtable_t *st) {
     if (err != 0) {
       return err;
     }
-    if (!compatible(symbol->func.param_types[i], n->as.call.args[i]->dataType)) {
+    if (!compatible(symbol->func.param_types[i], get_type(n->as.call.args[i]))) {
       fprintf(stderr, "Chyba (radek %d): Neschodny datatype argumentu funkce %s\n", n->line,
               n->as.call.name);
       return 5;
     }
   }
-  n->dataType = symbol->func.ret_type;
+  set_type(n, symbol->func.ret_type);
   return 0;
 }
 int check_unop(Node *n, symtable_t *st) {
-  int err = check_node(n->as.unop.operand,st);
+  int err = check_node(n->as.unop.operand, st);
   if (err != 0) {
     return err;
   }
-  if (n->as.unop.op != TOKEN_MINUS ) {
+  if (n->as.unop.op != TOKEN_MINUS) {
     fprintf(stderr, "Chyba (radek %d): Neznamy unarni operator\n", n->line);
     return 6;
   }
-  if (n->as.unop.operand->dataType != TYPE_INT && n->as.unop.operand->dataType != TYPE_DOUBLE) {
-    fprintf(stderr, "Chyba (radek %d): Operand unarniho minus musi byt typu int nebo double\n", n->line);
+  data_type_t t = get_type(n->as.unop.operand);
+  if (t != TYPE_INT && t != TYPE_DOUBLE) {
+    fprintf(stderr, "Chyba (radek %d): Operand unarniho minus musi byt typu int nebo double\n",
+            n->line);
     return 6;
   }
+  set_type(n, t);
   return 0;
 }
 
@@ -401,27 +456,31 @@ int check_node(Node *n, symtable_t *st) {
       return check_binop(n, st);
     case N_CALL:
       return check_call(n, st);
-     case N_UNOP:
-         return check_unop(n,st);
+    case N_UNOP:
+      return check_unop(n, st);
     case N_RETURN:
       return check_return(n, st);
     case N_UNIT:
-      n->dataType = TYPE_UNIT;
+      set_type(n, TYPE_UNIT);
       return 0;
     case N_NUM:
-      n->dataType = TYPE_INT;
+      set_type(n, TYPE_INT);
       return 0;
     case N_DOUBLE:
-      n->dataType = TYPE_DOUBLE;
+      set_type(n, TYPE_DOUBLE);
       return 0;
     case N_STRING:
-      n->dataType = TYPE_STRING;
+      set_type(n, TYPE_STRING);
       return 0;
     default:
       return 0;
   }
 }
 /* projde vsechny funkce a podiva se zda existuje main
+ * v pripade vice main vraci 4
+ * v pripade zadneho main vraci 3
+ * v pripade parametru v main vraci 5
+ * v pripade ze return type neni unit vraci 6
  */
 int check_main(Node *n) {
   int mainCount = 0;
@@ -432,7 +491,7 @@ int check_main(Node *n) {
         fprintf(stderr, "Chyba (radek %d): V definici main je parametr\n", n->line);
         return 5;
       }
-      if (n->as.program.funcs[i]->as.func.ret != TYPE_UNIT) {
+      if (from_tree(n->as.program.funcs[i]->as.func.ret) != TYPE_UNIT) {
         fprintf(stderr, "Chyba (radek %d): V return type main neni Unit\n", n->line);
         return 6;
       }
@@ -450,7 +509,6 @@ int check_main(Node *n) {
 }
 
 int analyze(Node *prog) {
-  // Node *prog = parse_program();
   symtable_t *st = symtable_create();
 
   if (st == NULL) {
