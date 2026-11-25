@@ -72,6 +72,8 @@ typedef enum { // podobně jako v token.h - jedná se o jakousi kolekci VŠECH
   S_ISTR_TEXT,
   S_ISTR_DOLLAR,
   S_ISTR_ID,
+  S_AND,
+  S_OR,
 
 } State;
 
@@ -105,7 +107,11 @@ static TokenType keyword(const char *s) {
   if (strcmp(s, "while") == 0)
     return TOKEN_WHILE;
   if (strcmp(s, "Boolean") == 0)
-    return TOKEN_RESERVED;
+    return TOKEN_TYPE_BOOLEAN;
+  if (strcmp(s, "true") == 0)
+    return TOKEN_TRUE;
+  if (strcmp(s, "false") == 0)
+    return TOKEN_FALSE;
   if (strcmp(s, "case") == 0)
     return TOKEN_RESERVED;
   if (strcmp(s, "class") == 0)
@@ -325,6 +331,10 @@ int get_token(Token *t) {
       else if (c == ';') {
         t->type = TOKEN_SEMICOLON;
         return 0;
+      } else if (c == '&') {
+        state = S_AND;
+      } else if (c == '|') {
+        state = S_OR;
       } else if (c == '}' && istr_expr) {
         istr_expr = 0;
         t->type = TOKEN_ISTR_EXPR_END;
@@ -770,8 +780,11 @@ int get_token(Token *t) {
       if (c == '=') {
         t->type = TOKEN_NEQ;
         return 0;
-      } else
-        return 1;
+      } else {
+        ungetc(c, stdin);
+        t->type = TOKEN_NOT;
+        return 0;
+      }
       break;
 
     case S_L_THAN:
@@ -887,6 +900,22 @@ int get_token(Token *t) {
         strcpy(t->stringValue, buf);
         return 0;
       }
+      break;
+
+    case S_AND:
+      if (c == '&') {
+        t->type = TOKEN_AND;
+        return 0;
+      } else
+        return 1;
+      break;
+
+    case S_OR:
+      if (c == '|') {
+        t->type = TOKEN_OR;
+        return 0;
+      } else
+        return 1;
       break;
 
     default:
