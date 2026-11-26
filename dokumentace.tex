@@ -1,22 +1,14 @@
-% =====================================================================
-%  Dokumentace k projektu IFJ – šablona
-%  Překlad:  pdflatex dokumentace.tex  (2× kvůli odkazům)
-%            nebo: latexmk -pdf dokumentace.tex
-% =====================================================================
+
 \documentclass[a4paper,11pt]{article}
 
-% --- Kódování, jazyk, písmo -------------------------------------------
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[czech]{babel}
 \usepackage{lmodern}
 \usepackage{microtype}
 
-% --- Sazba stránky ----------------------------------------------------
 \usepackage[a4paper,margin=2.5cm]{geometry}
-\usepackage{parskip}               % odstavce oddělené mezerou, bez odsazení
-
-% --- Tabulky, grafika, diagramy ---------------------------------------
+\usepackage{parskip}
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{tabularx}
@@ -24,32 +16,25 @@
 \usepackage{array}
 \usepackage{multirow}
 \usepackage{pdflscape}
-\usepackage{adjustbox}           % zmenšení širokých tabulek jen když je potřeba             % otočené stránky pro velké tabulky
+\usepackage{adjustbox}
 \usepackage[table]{xcolor}
 \usepackage{tikz}
 \usetikzlibrary{automata,positioning,arrows.meta,shapes.geometric,fit,babel}
 \usepackage{float}
 \usepackage{caption}
-
-% --- Ostatní ----------------------------------------------------------
 \usepackage{enumitem}
 \setlist{nosep}
 \usepackage{xspace}
 \usepackage[hidelinks]{hyperref}
 \usepackage{url}
 
-% --- Vlastní makra ----------------------------------------------------
 \newcommand{\id}[1]{\texttt{#1}}       % identifikátory pevnou šířkou
 \newcommand{\nt}[1]{\ensuremath{\langle\mathit{#1}\rangle}} % neterminál
 \newcommand{\term}[1]{\texttt{#1}}     % terminál
 \newcommand{\TODO}[1]{\textcolor{red}{\textbf{TODO:} #1}}
 
-% =====================================================================
 \begin{document}
 
-% ---------------------------------------------------------------------
-%  TITULNÍ STRANA
-% ---------------------------------------------------------------------
 \begin{titlepage}
   \centering
   {\Large Vysoké učení technické v~Brně\par}
@@ -57,27 +42,27 @@
   \vspace{3cm}
   {\Huge\bfseries Dokumentace k projektu IFJ\par}
   \vspace{0.5cm}
-  {\Large Implementace překladače imperativního jazyka IFJ2026\par}
+  {\Large Implementace překladače imperativního jazyka IFJ26\par}
   \vspace{2cm}
 
-  {\large {xlogin00 vedoucího}, varianta \textbf{TRP-izp}\par}
+  {\large Tým \id{xnemecm00}, varianta \textbf{TRP-izp}\par}
   \vspace{1.5cm}
 
   % Vedoucí týmu tučně!
   \begin{tabular}{l l r r}
     \toprule
-    \textbf{Pavel Šenkýř} & \textbf{Login} & \textbf{Osobní číslo} & \textbf{Body} \\
+    \textbf{Jméno a příjmení} & \textbf{Login} & \textbf{Osobní číslo} & \textbf{Body} \\
     \midrule
-    \textbf{Matyáš Němeček} & \textbf{\id{xnemecm00}} & \textbf{\TODO{}} & \textbf{25\,\%} \\
-    \TODO{Jméno Příjmení}   & \id{xlogin00}           & \TODO{}          & 25\,\% \\
-    \TODO{Jméno Příjmení}   & \id{xlogin00}           & \TODO{}          & 25\,\% \\
-    \TODO{Jméno Příjmení}   & \id{xlogin00}           & \TODO{}          & 25\,\% \\
+    \textbf{Matyáš Němeček} & \textbf{\id{xnemecm00}} & \textbf{282780} & \textbf{25\,\%} \\
+    Pavel Šenkýř            & \id{xsenkyp00}          & 282122          & 25\,\% \\
+    Ben Benian              & \id{xbeniaj00}          & 269498          & 25\,\% \\
+    Tomáš Smrčka            & \id{xsmrckt00}          & 282230          & 25\,\% \\
     \bottomrule
   \end{tabular}
 
   \vspace{1.5cm}
   \begin{tabular}{r l}
-    Implementovaná rozšíření: & \id{\TODO{ROZ1}}, \id{\TODO{ROZ2}} \\
+    Implementovaná rozšíření: & \id{FUNEXP}, \id{BOOLTHEN} \\
     Git repozitář:            & \url{https://github.com/Pamazacre/IFJ26} \\
   \end{tabular}
 
@@ -94,21 +79,20 @@
 
 \subsection{Rozdělení práce}
 \begin{itemize}
-  \item \textbf{Matyáš Němeček} (vedoucí) -- lexikální analyzátor (\id{scanner.c}), \TODO{}
-  \item \textbf{\TODO{Jméno}} -- syntaktický analyzátor (rekurzivní sestup), \TODO{}
-  \item \textbf{\TODO{Jméno}} -- precedenční analýza výrazů, \TODO{}
-  \item \textbf{\TODO{Jméno}} -- sémantická analýza, generátor kódu, \TODO{}
+  \item \textbf{Matyáš Němeček} -- lexikální analyzátor (\id{scanner.c}), kontrola syntaktického analyzátoru
+  \item \textbf{Pavel Šenkýř} -- syntaktický analyzátor, kontrola sémantického analyzátoru
+  \item \textbf{Tomáš Smrčka} -- sémantická analýza, kontrola generátoru
+  \item \textbf{Ben Benian} -- generátor kódu, kontrola lexikálního analyzátoru.
 \end{itemize}
 
-% Povinné, pokud body nejsou rozděleny rovnoměrně:
-\paragraph{Zdůvodnění odchylek od rovnoměrného rozdělení bodů.}
-\TODO{Body jsou rozděleny rovnoměrně / zdůvodnění.}
+
 
 \subsection{Spolupráce a code review}
 \begin{itemize}
-  \item Vývoj ve větvích, začlenění do \id{main} pouze přes pull request.
-  \item Každý PR schvaluje alespoň \TODO{jeden} další člen týmu; \TODO{}.
-  \item Komunikace: \TODO{Discord, pravidelné schůzky\,\dots}
+  \item Spolupráce probíhala především online, každý měl jednu ze čtyř, teoreticky oddělených, částí.
+  \item Vzájemná kontrola probíhala tak, že 1. kontroloval 2, 2 kontroloval 3, 3 kontroloval 4 a 4 kontroloval prvního. Díky této metodě jsme mohli každý nahlédnout do další části projekt a mít plný přehled.
+  \item GitHub byl použit spíše jako ukládání různých verzí kódu, neprobíhalo žádné schvalování. Kontrola, nebo spíše vysvětlení postupu a odůvodnění kroků, které každý provedl, se vysvětlovali až na prezenčních schůzkách.
+
 \end{itemize}
 
 \subsection{Testování}
@@ -119,34 +103,37 @@
 \end{itemize}
 
 \subsection{Styl formátování kódu}
-\TODO{Např. \id{clang-format} s~konfigurací \id{.clang-format} založenou na stylu \id{LLVM}, odsazení 4 mezery.}
+\begin{itemize}
+\item proměnné - camel case
+\item LLVM
+\item funkce - snake case
+\end{itemize}
 
 % ---------------------------------------------------------------------
 \section{Architektura překladače}
 % ---------------------------------------------------------------------
-Obrázek~\ref{fig:arch} zobrazuje moduly překladače a datové toky mezi nimi.
-\TODO{Textový popis: vstup (zdrojový kód na \id{stdin}), výstup (\TODO{cílový kód} na \id{stdout},
-návratový kód), význam komponent a struktury, které si předávají.}
+Obrázek~\ref{fig:arch} zobrazuje jednotlivé části překladače a k nim jejich vstupy a výstupy. Pro vstupy a výstupy jsou dále vyznačené v jaké \textit{podobě} procházejí automatem.
+
 
 \begin{figure}[H]
   \centering
   \begin{tikzpicture}[
       node distance=1.0cm and 1.5cm,
       mod/.style={draw, rounded corners, thick, minimum width=2.7cm,
-                  minimum height=1cm, align=center, fill=blue!8},
+                  minimum height=1cm, align=center},
       data/.style={draw, dashed, minimum width=2.2cm, minimum height=0.8cm,
-                   align=center, fill=gray!10},
+                   align=center},
       flow/.style={-{Stealth[length=3mm]}, thick},
       lbl/.style={font=\small\itshape, midway}
     ]
-    \node[data] (src)  {zdrojový kód\\(\id{stdin})};
+    \node[data] (src)  {zdrojový kód\\(\id{IFJ2026})};
     \node[mod, right=of src]  (lex) {lexikální\\analyzátor};
     \node[mod, right=of lex]  (par) {syntaktický\\analyzátor};
     \node[mod, below=1.6cm of par] (expr) {precedenční\\analýza výrazů};
-    \node[mod, right=of par]  (sem) {sémantická\\analýza};
+    \node[mod, right= of par]  (sem) {sémantická\\analýza};
     \node[mod, below=1.6cm of sem] (gen) {generátor\\kódu};
-    \node[data, below=1.4cm of gen] (out) {cílový kód\\(\id{stdout})};
-    \node[mod, fill=orange!12, below=1.6cm of lex] (sym) {tabulka symbolů\\(TRP-izp)};
+    \node[data, below=1.4cm of gen] (out) {cílový kód\\(\id{IFJCode})};
+    \node[mod,below=1.6cm of lex] (sym) {tabulka symbolů\\(TRP-izp)};
 
     \draw[flow] (src) -- node[lbl, above] {znaky} (lex);
     \draw[flow] (lex) -- node[lbl, above] {tokeny} (par);
@@ -157,53 +144,349 @@ návratový kód), význam komponent a struktury, které si předávají.}
     \draw[flow, <->, dashed] (sym) -- (par);
     \draw[flow, <->, dashed] (sym.south) |- ++(0,-0.6) -| (sem.south west);
   \end{tikzpicture}
-  \caption{Blokové schéma architektury překladače \TODO{upravit dle skutečnosti}}
+  \caption{Blokové schéma architektury překladače}
   \label{fig:arch}
 \end{figure}
 
 % ---------------------------------------------------------------------
 \section{Lexikální analýza}
 % ---------------------------------------------------------------------
-Lexikální analyzátor je implementován jako deterministický konečný automat
-(obr.~\ref{fig:fsm}). \TODO{Popis odchylek od standardního modelu KA, např. dopředné čtení,
-rozpoznání klíčových slov až v~koncovém stavu identifikátoru.}
+Lexikální analyzátor je implementován jako deterministický konečný automat. \textbf{Klíčová slova jsou podle konečného automatu pouze identifikátory. Klíčová slova jsou identifikována až potom. Výrazně to zjednodušší automat.}
+
+Všechny stavy jsou pojemenovány přesně tak, jak jsou poté implementovány v scanner.c. Diagramy jsou vykresleny pomocí tikz library pro LaTeX editor. Pro lepší přehlednost je automatu rozdělený na 8 částí, jde ale samozřejmě o jeden konečný automat.
+
+
+\providecommand{\term}[1]{\texttt{#1}}
+\providecommand{\uvz}{\symbol{34}}
+
+\tikzset{
+  ka/.style={
+    ->, >={Stealth[length=2.5mm]}, auto, thick,
+    every state/.style={minimum size=1.1cm, inner sep=1pt, font=\scriptsize\ttfamily},
+    every edge quotes/.style={font=\footnotesize},
+    initial text={}
+  },
+  err/.style={rectangle, draw, rounded corners=2pt, minimum height=0.6cm,
+              inner sep=3pt, font=\footnotesize},
+  spoj/.style={rectangle, draw, dashed, rounded corners=6pt, minimum height=0.6cm,
+               inner sep=3pt, font=\scriptsize\ttfamily},
+  pozn/.style={font=\footnotesize, align=center}
+}
 
 \begin{figure}[H]
   \centering
-  \begin{tikzpicture}[
-      ->, >={Stealth[length=2.5mm]}, auto, node distance=2.4cm, thick,
-      every state/.style={minimum size=1.1cm, font=\small}
-    ]
-    \node[state, initial]   (S)  {Start};
-    \node[state, accepting, right=of S] (ID) {ID};
-    \node[state, accepting, below=of S] (INT) {Int};
-    \node[state, right=of INT] (DOT) {Dot};
-    \node[state, accepting, right=of DOT] (FL) {Float};
+  \begin{tikzpicture}[ka]
+    \node[state, initial]   (S)   at (0,0)    {S\_START};
+    \node[state, accepting] (ID)  at (4,1.8)  {S\_ID};
+    \node[state, accepting] (UNS) at (4,-0.6) {S\_UNS};
+    \node[state, accepting] (AT)  at (4,-3)   {S\_AT};
 
-    \path (S)   edge node {\term{a-z, A-Z, \_}} (ID)
+    \path (S)   edge node {\term{a-z, A-Z}} (ID)
+          (S)   edge node {\term{\_}} (UNS)
+          (UNS) edge node[swap] {\term{a-z, A-Z, 0-9, \_}} (ID)
           (ID)  edge[loop above] node {\term{a-z, A-Z, 0-9, \_}} (ID)
-          (S)   edge node[swap] {\term{0-9}} (INT)
-          (INT) edge[loop left] node {\term{0-9}} (INT)
-          (INT) edge node {\term{.}} (DOT)
-          (DOT) edge node {\term{0-9}} (FL)
-          (FL)  edge[loop above] node {\term{0-9}} (FL);
-  \end{tikzpicture}
-  \caption{Diagram konečného automatu lexikálního analyzátoru \TODO{doplnit celý}}
-  \label{fig:fsm}
-\end{figure}
-% Tip: velký automat lze nakreslit v draw.io / JFLAP, exportovat do PDF a vložit:
-% \includegraphics[width=\textwidth]{img/fsm.pdf}
+          (S)   edge node[swap] {\term{@}} (AT)
+          (AT)  edge[loop right] node {\term{a-z, A-Z, 0-9, \_}} (AT);
 
-% ---------------------------------------------------------------------
+    \node[pozn, right=0.4cm of ID] {konec: \texttt{keyword()}\\klíčové slovo, nebo \texttt{TOKEN\_ID}};
+    \node[pozn, below=0.3cm of AT] {konec: text \texttt{main} $\rightarrow$ \texttt{TOKEN\_AT\_MAIN},\\jinak chyba 1};
+  \end{tikzpicture}
+  \caption{KA pro identifikátory, klíčová slova a \texttt{@main}}
+  \label{fig:ka-id}
+\end{figure}
+
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[ka]
+    \node[state, initial]   (S)     at (0,0)     {S\_START};
+    \node[state, accepting] (INT)   at (3.6,1.8) {S\_INT};
+    \node[state]            (INTU)  at (3.6,-1)  {S\_INT\_\_};
+    \node[state, accepting] (INT0)  at (0,-3.4)  {S\_INT0};
+
+    \node[spoj] (D1) at (7.6,2.6)  {$\rightarrow$ S\_INT\_DOT};
+    \node[spoj] (E1) at (7.6,1.2)  {$\rightarrow$ S\_EXP};
+    \node[spoj] (D2) at (4.4,-2.9) {$\rightarrow$ S\_INT\_DOT};
+    \node[spoj] (E2) at (4.4,-3.9) {$\rightarrow$ S\_EXP};
+    \node[state]            (INT0D) at (0,-6.4)  {S\_INT0\_D};
+    \node[state]            (INT0U) at (0,-9.2)  {S\_INT0\_U};
+    \node[spoj] (D3) at (4.4,-5.9) {$\rightarrow$ S\_INT\_DOT};
+    \node[spoj] (E3) at (4.4,-6.9) {$\rightarrow$ S\_EXP};
+
+    \path (S)    edge node {\term{1-9}} (INT)
+          (INT)  edge[loop above] node {\term{0-9}} (INT)
+          (INT)  edge[bend left=25] node {\term{\_}} (INTU)
+          (INTU) edge[bend left=25] node {\term{0-9}} (INT)
+          (INTU) edge[loop right] node {\term{\_}} (INTU)
+          (INT)  edge node {\term{.}} (D1)
+          (INT)  edge node[swap] {\term{e, E}} (E1)
+          (S)    edge node[swap] {\term{0}} (INT0)
+          (INT0) edge node {\term{.}} (D2)
+          (INT0) edge node {\term{e, E}} (E2)
+          (INT0) edge node {\term{0-9}} (INT0D)
+          (INT0) edge[bend right=70] node[swap] {\term{\_}} (INT0U)
+          (INT0D) edge[loop right] node {\term{0-9}} (INT0D)
+          (INT0D) edge[bend left=25] node {\term{\_}} (INT0U)
+          (INT0U) edge[bend left=25] node {\term{0-9}} (INT0D)
+          (INT0U) edge[loop right] node {\term{\_}} (INT0U)
+          (INT0D) edge node {\term{.}} (D3)
+          (INT0D) edge node[swap] {\term{e, E}} (E3);
+  \end{tikzpicture}
+  \caption{KA pro celočíselný literál Int (přechody do S\_INT\_DOT a S\_EXP pokračují na obrázku~\ref{fig:ka-double})}
+  \label{fig:ka-int}
+\end{figure}
+
+
+\begin{figure}[H]
+  \centering
+  \resizebox{\linewidth}{!}{%
+  \begin{tikzpicture}[ka]
+    \node[spoj] (Z1) at (0,2.3) {z S\_INT / S\_INT0 / S\_INT0\_D};
+    \node[spoj] (Z2) at (8.4,3.3) {z S\_INT / S\_INT0 / S\_INT0\_D};
+
+    \node[state, initial]   (S)    at (0,0)       {S\_START};
+    \node[state]            (ID)   at (3,2.3)     {S\_INT\_DOT};
+    \node[state, accepting] (DD)   at (3,0)       {S\_DOUBLE\_DOT};
+    \node[state, accepting] (FR)   at (5.8,1.2)   {S\_FRAC};
+    \node[state]            (FRU)  at (5.8,-1.8)  {S\_FRAC\_};
+    \node[state]            (EXP)  at (8.4,1.2)   {S\_EXP};
+    \node[state]            (SG)   at (10,-1)     {S\_EXP\_SIGN};
+    \node[state, accepting] (ED)   at (12,1.2)    {S\_EXPD};
+    \node[state]            (EDU)  at (14.6,1.2)  {S\_EXPD\_};
+    \node[state, accepting] (SUF)  at (8.4,-3.6)  {S\_SUFFIX};
+
+    \path (Z1)  edge[dashed] (ID)
+          (Z2)  edge[dashed] (EXP)
+          (S)   edge node {\term{.}} (DD)
+          (ID)  edge node {\term{0-9}} (FR)
+          (DD)  edge node[swap] {\term{0-9}} (FR)
+          (FR)  edge[loop above] node {\term{0-9}} (FR)
+          (FR)  edge[bend left=25] node {\term{\_}} (FRU)
+          (FRU) edge[bend left=25] node {\term{0-9}} (FR)
+          (FRU) edge[loop left] node {\term{\_}} (FRU)
+          (FR)  edge node {\term{e, E}} (EXP)
+          (EXP) edge node[swap] {\term{+, -}} (SG)
+          (EXP) edge node {\term{0-9}} (ED)
+          (SG)  edge node[swap] {\term{0-9}} (ED)
+          (ED)  edge[loop above] node {\term{0-9}} (ED)
+          (ED)  edge[bend left=25] node {\term{\_}} (EDU)
+          (EDU) edge[bend left=25] node {\term{0-9}} (ED)
+          (EDU) edge[loop right] node {\term{\_}} (EDU)
+          (FR)  edge node[pos=0.65] {\term{d, D}} (SUF)
+          (ED)  edge[out=-90, in=0] node {\term{d, D}} (SUF);
+
+    \node[pozn, below=0.15cm of DD] {token \texttt{DOT}};
+  \end{tikzpicture}}
+  \caption{KA pro desetinný literál Double a samostatnou tečku}
+  \label{fig:ka-double}
+\end{figure}
+
+
+\begin{figure}[H]
+  \centering
+  \resizebox{\linewidth}{!}{%
+  \begin{tikzpicture}[ka]
+    \node[state, initial]   (S)   at (0,0)      {S\_START};
+    \node[state]            (Q1)  at (2.8,0)    {S\_QFIRST};
+    \node[state]            (STR) at (6.4,0)    {S\_STR};
+    \node[state, accepting] (SE)  at (9.8,0)    {S\_STR\_END};
+    \node[state]            (ESC) at (5.3,-2.3) {S\_ESC};
+    \node[state, accepting] (Q2)  at (2.8,-4.6) {S\_QSEC};
+    \node[state]            (ML)  at (5.6,-4.6) {S\_ML};
+    \node[state]            (MQ1) at (8.2,-4.6) {S\_ML\_Q1};
+    \node[state]            (MQ2) at (10.8,-4.6){S\_ML\_Q2};
+    \node[state, accepting] (MEND)at (13.4,-4.6){S\_ML\_END};
+
+    \path (S)    edge node {\term{\uvz}} (Q1)
+          (Q1)   edge node {\term{c}} (STR)
+          (STR)  edge[loop above] node {\term{c}} (STR)
+          (STR)  edge node {\term{\uvz}} (SE)
+          (Q1)   edge node[swap] {\term{\textbackslash}} (ESC)
+          (STR)  edge[bend right=15] node[swap] {\term{\textbackslash}} (ESC)
+          (ESC)  edge[bend right=15] node[swap] {\term{\textbackslash{} \uvz{} n r t}} (STR)
+          (Q1)   edge node[swap] {\term{\uvz}} (Q2)
+          (Q2)   edge node {\term{\uvz}} (ML)
+          (ML)   edge[loop above] node {\term{m}} (ML)
+          (ML)   edge node {\term{\uvz}} (MQ1)
+          (MQ1)  edge node {\term{\uvz}} (MQ2)
+          (MQ2)  edge node {\term{\uvz}} (MEND)
+          (MQ1)  edge[bend left=30] node {\term{m}} (ML)
+          (MQ2)  edge[bend left=40] node {\term{m}} (ML)
+          (MEND) edge[loop above] node {\term{\uvz}} (MEND);
+  \end{tikzpicture}}
+  \caption{KA pro řetězcové literály. \term{c} je libovolný znak kromě \term{\uvz}, \term{\textbackslash}, LF, NUL a EOF,
+           \term{m} je libovolný znak kromě \term{\uvz}, NUL a EOF}
+  \label{fig:ka-string}
+\end{figure}
+
+
+\begin{figure}[H]
+  \centering
+  \resizebox{\linewidth}{!}{%
+  \begin{tikzpicture}[ka]
+    \node[spoj] (Z)   at (0,0)       {z S\_ID (text \texttt{s})};
+    \node[state, accepting] (O1)  at (3.6,0)     {S\_ISTR\_OPEN};
+    \node[state, accepting] (O2)  at (7.6,0)     {S\_ISTR\_OPEN2};
+    \node[state, accepting] (EA)  at (11.6,0)    {ISTR\_END};
+    \node[spoj] (MQ)  at (-0.6,-3.6) {$\rightarrow$ S\_ML\_Q1};
+    \node[state, accepting] (TX)  at (3.6,-3.6)  {S\_ISTR\_TEXT};
+    \node[state]            (DL)  at (7.6,-3.6)  {S\_ISTR\_DOLLAR};
+    \node[state, accepting] (IDN) at (11.6,-3.6) {S\_ISTR\_ID};
+    \node[spoj] (ESC) at (0.4,-6.6)  {$\rightarrow$ S\_ESC};
+    \node[state, accepting] (EB)  at (5.6,-6.6)  {ISTR\_END};
+    \node[state, accepting] (EXS) at (8.8,-6.6)  {EXPR\_START};
+    \node[state, initial]   (SS)  at (12.4,-6.6) {S\_START};
+    \node[state, accepting] (EXE) at (15.4,-6.6) {EXPR\_END};
+
+    \path (Z)   edge[dashed] node {\term{\uvz}} (O1)
+          (O1)  edge node {\term{\uvz}} (O2)
+          (O1)  edge node {jiný znak} (TX)
+          (O2)  edge node {\term{\uvz}} (TX)
+          (O2)  edge node {jiný znak} (EA)
+          (TX)  edge[loop below] node {\term{t}} (TX)
+          (TX)  edge node[swap] {\term{\uvz} (\term{\uvz\uvz\uvz})} (MQ)
+          (TX)  edge node[swap] {\term{\textbackslash}} (ESC)
+          (TX)  edge node {\term{\uvz}} (EB)
+          (TX)  edge[bend left=20] node {\term{\$}} (DL)
+          (DL)  edge[bend left=20] node {\term{\$}} (TX)
+          (DL)  edge node {\term{\{}} (EXS)
+          (DL)  edge node {\term{a-z, A-Z, \_}} (IDN)
+          (IDN) edge[loop above] node {\term{a-z, A-Z, 0-9, \_}} (IDN)
+          (SS)  edge node {\term{\}}} (EXE);
+  \end{tikzpicture}}
+  \caption{KA pro interpolované řetězce (rozšíření INTERPOLATEDS). \term{t} je libovolný znak kromě \term{\$}, \term{\uvz}, \term{\textbackslash} a EOF}
+  \label{fig:ka-istr}
+\end{figure}
+
+
+\begin{figure}[H]
+  \centering
+  \resizebox{\linewidth}{!}{%
+  \begin{tikzpicture}[ka]
+    \node[state, initial]   (S)    at (0,0)     {S\_START};
+    \node[state, accepting] (CM)   at (3,0)     {S\_COMMS};
+    \node[state]            (LC)   at (6,0)     {S\_LC};
+    \node[state]            (BC)   at (3,-3.4)  {S\_BC};
+    \node[state]            (BS)   at (7.6,-1.6) {S\_BL\_S};
+    \node[state]            (BSL)  at (7,-5)    {S\_BL\_SLASH};
+    \node[state, accepting] (BE)   at (11,-1.6) {S\_BL\_END};
+
+    \path (S)   edge node {\term{/}} (CM)
+          (CM)  edge node {\term{/}} (LC)
+          (LC)  edge[loop right] node {ne LF, EOF} (LC)
+          (LC)  edge[dashed, bend right=35] node[swap] {LF, EOF (\texttt{ungetc})} (S)
+          (CM)  edge node[swap] {\term{*}, $h \gets 1$} (BC)
+          (BC)  edge[loop left] node {ne \term{*}, \term{/}, EOF} (BC)
+          (BC)  edge node[swap] {\term{*}} (BS)
+          (BC)  edge node {\term{/}} (BSL)
+          (BS)  edge[loop below] node {\term{*}} (BS)
+          (BSL) edge[loop right] node {\term{/}} (BSL)
+          (BS)  edge node {\term{/} při $h = 1$} (BE)
+          (BS)  edge[bend right=30] node[pozn, above=1pt] {jiný znak\\\term{/} při $h > 1$: $h \gets h-1$} (BC)
+          (BSL) edge[bend left=30] node[pozn, below=1pt] {jiný znak\\\term{*}: $h \gets h+1$} (BC);
+
+    \node[pozn, below=0.2cm of BE] {LF uvnitř $\rightarrow$ token \texttt{EOL},\\jinak jen mezera};
+  \end{tikzpicture}}
+  \caption{KA pro komentáře a operátor dělení ($h$ je čítač vnoření blokového komentáře).
+           EOF uvnitř blokového komentáře je chyba}
+  \label{fig:ka-comment}
+\end{figure}
+
+
+\begin{figure}[H]
+  \centering
+  \resizebox{\linewidth}{!}{%
+  \begin{tikzpicture}[ka]
+
+    \node[state, initial] (S1) at (0,0)    {S\_START};
+    \node[state, initial] (S2) at (0,-2)   {S\_START};
+    \node[state, initial] (S3) at (0,-4)   {S\_START};
+    \node[state, initial] (S4) at (0,-6)   {S\_START};
+    \node[state, accepting] (ASG) at (3,0)  {S\_ASSIGN};
+    \node[state, accepting] (EXC) at (3,-2) {S\_EXCLAM};
+    \node[state, accepting] (LT)  at (3,-4) {S\_L\_THAN};
+    \node[state, accepting] (GT)  at (3,-6) {S\_G\_THAN};
+    \node[state, accepting] (EQ)  at (6,0)  {EQ};
+    \node[state, accepting] (NEQ) at (6,-2) {NEQ};
+    \node[state, accepting] (LE)  at (6,-4) {LE};
+    \node[state, accepting] (GE)  at (6,-6) {GE};
+    \node[state, initial] (S5) at (0,-8)   {S\_START};
+    \node[state, initial] (S6) at (0,-10)  {S\_START};
+    \node[state]            (AND1) at (3,-8)  {S\_AND};
+    \node[state]            (OR1)  at (3,-10) {S\_OR};
+    \node[state, accepting] (AND)  at (6,-8)  {AND};
+    \node[state, accepting] (OR)   at (6,-10) {OR};
+    \path (S1) edge node {\term{=}} (ASG)  (ASG) edge node {\term{=}} (EQ)
+          (S2) edge node {\term{!}} (EXC)  (EXC) edge node {\term{=}} (NEQ)
+          (S3) edge node {\term{<}} (LT)   (LT)  edge node {\term{=}} (LE)
+          (S4) edge node {\term{>}} (GT)   (GT)  edge node {\term{=}} (GE)
+          (S5) edge node {\term{\&}} (AND1) (AND1) edge node {\term{\&}} (AND)
+          (S6) edge node {\term{|}} (OR1)   (OR1)  edge node {\term{|}} (OR);
+
+    \foreach \y/\z/\ch/\tok in {0/a/+/PLUS, -2/b/-/MINUS, -4/c/*/MUL, -6/d/{,}/COMMA} {
+      \node[state, initial]   (A\z) at (9,\y)    {S\_START};
+      \node[state, accepting] (B\z) at (11.8,\y) {\tok};
+      \path (A\z) edge node {\term{\ch}} (B\z);
+    }
+    \foreach \y/\z/\ch/\tok in {0/e/(/LPAR, -2/f/)/RPAR, -4/g/:/COLON, -6/h/;/SEMICOLON} {
+      \node[state, initial]   (A\z) at (15,\y)   {S\_START};
+      \node[state, accepting] (B\z) at (17.8,\y) {\tok};
+      \path (A\z) edge node {\term{\ch}} (B\z);
+    }
+  \end{tikzpicture}}
+  \caption{KA pro operátory a oddělovače. Všechny řádky začínají ve stejném stavu S\_START.
+           Koncové stavy bez odchozích hran nejsou v enumu, jsou pojmenované podle vraceného tokenu}
+  \label{fig:ka-op}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \resizebox{\linewidth}{!}{%
+  \begin{tikzpicture}[ka]
+    \node[state, initial, initial where=below] (S)   at (0,0)     {S\_START};
+    \node[state, accepting] (EOL) at (4,1.4)   {EOL};
+    \node[state, accepting] (EOF) at (4,-0.4)  {S\_EOF};
+    \node[err]              (X)   at (4,-2)    {chyba 1};
+    \node[state, accepting] (IND) at (-4,1.4)  {INDENT};
+    \node[state, accepting] (DED) at (-4,-0.4) {DEDENT};
+    \node[err]              (X2)  at (-4,-2)   {chyba 2};
+
+    \path (S) edge[loop above] node {mezera, TAB, CR} (S)
+          (S) edge node {LF} (EOL)
+          (S) edge node[pos=0.6] {EOF} (EOF)
+          (S) edge node[swap] {TAB na začátku řádku, jiný znak} (X)
+          (S) edge node[swap] {odsazení $>$ vrchol} (IND)
+          (S) edge node[pos=0.6, swap] {odsazení $<$ vrchol} (DED)
+          (S) edge node {chybné odsazení, \term{- } na začátku řádku} (X2);
+  \end{tikzpicture}}
+  \caption{KA pro bílé znaky, konec řádku a konec souboru. LF uvnitř závorek se chová jako mezera}
+  \label{fig:ka-ws}
+\end{figure}
+
+
 \section{Syntaktická analýza}
-% ---------------------------------------------------------------------
-Syntaktický analyzátor je implementován rekurzivním sestupem podle LL(1) gramatiky
-(tab.~\ref{tab:grammar}), výrazy zpracovává precedenční syntaktická analýza
-(tab.~\ref{tab:prec}).
+Syntaktický analyzátor (parser.c) je řízen rekurzivním sestupem:
+každý neterminál gramatiky odpovídá jedné funkci parse\_x. Parser si
+drží aktuální token cur a funkcí peek() se umí podívat o~jeden
+token dopředu. Funkci peek() funkce expect(), která kontroluje podle pravidel v dané parse\_x funkci, jestli tam daný token je a posune se dál. Bloky se rozlišují tokeny INDENT
+a DEDENT, které vyrábí scanner podle odsazení.
+
+Výrazy parser předá precedenční analýze
+(funkce parse\_expr, podkap.~\ref{sec:prec}). Výsledkem celé analýzy
+je abstraktní syntaktický strom (AST, tree.c/h), který dál prochází
+sémantická analýza a generátor kódu. Při chybě parser končí návratovým
+kódem~2.
 
 \subsection{LL gramatika}
+Gramatika v~tab.~\ref{tab:grammar} odpovídá funkcím parseru.
+Neterminál \nt{expr} se dál nerozvíjí, zpracuje ho precedenční analýza.
+Argumenty volání jsou podle zadání jen termy (\nt{term}), ne výrazy.
+Pravidla 14 a~55 povolují koncovou čárku. Pravidla s~\term{Boolean},
+\term{true}/\term{false}, \term{else if} (47) a \nt{istr} (62--67) patří
+k~rozšířením BOOLTHEN a INTERPOLATEDS.
+
 \begin{longtable}{r l c l}
-  \caption{LL(1) gramatika \TODO{}}\label{tab:grammar}\\
+  \caption{LL(1) gramatika jazyka IFJ26 včetně rozšíření BOOLTHEN a INTERPOLATEDS}\label{tab:grammar}\\
   \toprule
   \# & \multicolumn{3}{l}{Pravidlo}\\
   \midrule
@@ -212,88 +495,238 @@ Syntaktický analyzátor je implementován rekurzivním sestupem podle LL(1) gra
   \# & \multicolumn{3}{l}{Pravidlo}\\
   \midrule
   \endhead
-  1 & \nt{prog}      & $\rightarrow$ & \nt{prolog} \nt{func\_list} \term{EOF} \\
-  2 & \nt{func\_list} & $\rightarrow$ & \nt{func} \nt{func\_list} \\
-  3 & \nt{func\_list} & $\rightarrow$ & $\varepsilon$ \\
-  4 & \nt{stmt}      & $\rightarrow$ & \term{id} \term{=} \nt{expr} \term{EOL} \\
-  % ... doplnit
+  1  & \nt{prog}          & $\rightarrow$ & \nt{eols} \term{import} \term{id} \term{.} \term{*} \nt{eols} \nt{func\_list} \term{EOF} \\
+  2  & \nt{eols}          & $\rightarrow$ & \term{EOL} \nt{eols} \\
+  3  & \nt{eols}          & $\rightarrow$ & $\varepsilon$ \\
+  4  & \nt{func\_list}    & $\rightarrow$ & \nt{func} \nt{eols} \nt{func\_list} \\
+  5  & \nt{func\_list}    & $\rightarrow$ & $\varepsilon$ \\
+  6  & \nt{func}          & $\rightarrow$ & \nt{main\_opt} \term{def} \term{id} \term{(} \nt{params} \term{)} \nt{ret\_type} \term{=} \nt{body} \\
+  7  & \nt{main\_opt}     & $\rightarrow$ & \term{@main} \nt{eols} \\
+  8  & \nt{main\_opt}     & $\rightarrow$ & $\varepsilon$ \\
+  9  & \nt{params}        & $\rightarrow$ & \nt{param} \nt{params\_n} \\
+  10 & \nt{params}        & $\rightarrow$ & $\varepsilon$ \\
+  11 & \nt{params\_n}     & $\rightarrow$ & \term{,} \nt{params\_tail} \\
+  12 & \nt{params\_n}     & $\rightarrow$ & $\varepsilon$ \\
+  13 & \nt{params\_tail}  & $\rightarrow$ & \nt{param} \nt{params\_n} \\
+  14 & \nt{params\_tail}  & $\rightarrow$ & $\varepsilon$ \quad(koncová čárka) \\
+  15 & \nt{param}         & $\rightarrow$ & \term{id} \term{:} \nt{type} \\
+  16 & \nt{ret\_type}     & $\rightarrow$ & \term{:} \nt{type} \\
+  17 & \nt{ret\_type}     & $\rightarrow$ & $\varepsilon$ \\
+  18 & \nt{type}          & $\rightarrow$ & \term{Int} \\
+  19 & \nt{type}          & $\rightarrow$ & \term{Double} \\
+  20 & \nt{type}          & $\rightarrow$ & \term{String} \\
+  21 & \nt{type}          & $\rightarrow$ & \term{Unit} \\
+  22 & \nt{type}          & $\rightarrow$ & \term{Boolean} \\
+  23 & \nt{body}          & $\rightarrow$ & \term{EOL} \nt{block} \\
+  24 & \nt{body}          & $\rightarrow$ & \nt{expr\_or\_call} \\
+  25 & \nt{block}         & $\rightarrow$ & \term{INDENT} \nt{stmt\_list} \term{DEDENT} \\
+  26 & \nt{stmt\_list}    & $\rightarrow$ & \nt{simple\_stmt} \nt{stmt\_end} \\
+  27 & \nt{stmt\_list}    & $\rightarrow$ & \nt{compound\_stmt} \nt{stmt\_list\_n} \\
+  28 & \nt{stmt\_end}     & $\rightarrow$ & \term{EOL} \nt{stmt\_list\_n} \\
+  29 & \nt{stmt\_end}     & $\rightarrow$ & \term{;} \nt{stmt\_list} \\
+  30 & \nt{stmt\_list\_n} & $\rightarrow$ & \nt{stmt\_list} \\
+  31 & \nt{stmt\_list\_n} & $\rightarrow$ & $\varepsilon$ \\
+  32 & \nt{simple\_stmt}  & $\rightarrow$ & \term{val} \term{id} \nt{type\_opt} \term{=} \nt{expr\_or\_call} \\
+  33 & \nt{simple\_stmt}  & $\rightarrow$ & \term{var} \term{id} \nt{type\_opt} \term{=} \nt{expr\_or\_call} \\
+  34 & \nt{simple\_stmt}  & $\rightarrow$ & \term{return} \nt{ret\_val} \\
+  35 & \nt{simple\_stmt}  & $\rightarrow$ & \term{id} \term{=} \nt{expr\_or\_call} \\
+  36 & \nt{simple\_stmt}  & $\rightarrow$ & \nt{expr\_or\_call} \\
+  37 & \nt{type\_opt}     & $\rightarrow$ & \term{:} \nt{type} \\
+  38 & \nt{type\_opt}     & $\rightarrow$ & $\varepsilon$ \\
+  39 & \nt{ret\_val}      & $\rightarrow$ & \nt{expr\_or\_call} \\
+  40 & \nt{ret\_val}      & $\rightarrow$ & $\varepsilon$ \\
+  41 & \nt{compound\_stmt}& $\rightarrow$ & \nt{if\_stmt} \\
+  42 & \nt{compound\_stmt}& $\rightarrow$ & \term{while} \nt{expr} \term{do} \term{EOL} \nt{block} \\
+  43 & \nt{if\_stmt}      & $\rightarrow$ & \term{if} \nt{expr} \term{then} \term{EOL} \nt{block} \nt{else\_part} \\
+  44 & \nt{else\_part}    & $\rightarrow$ & \term{else} \nt{else\_rest} \\
+  45 & \nt{else\_part}    & $\rightarrow$ & $\varepsilon$ \\
+  46 & \nt{else\_rest}    & $\rightarrow$ & \term{EOL} \nt{block} \\
+  47 & \nt{else\_rest}    & $\rightarrow$ & \nt{if\_stmt} \\
+  48 & \nt{expr\_or\_call}& $\rightarrow$ & \term{id} \term{(} \nt{args} \term{)} \\
+  49 & \nt{expr\_or\_call}& $\rightarrow$ & \nt{expr} \\
+  50 & \nt{args}          & $\rightarrow$ & \nt{term} \nt{args\_n} \\
+  51 & \nt{args}          & $\rightarrow$ & $\varepsilon$ \\
+  52 & \nt{args\_n}       & $\rightarrow$ & \term{,} \nt{args\_tail} \\
+  53 & \nt{args\_n}       & $\rightarrow$ & $\varepsilon$ \\
+  54 & \nt{args\_tail}    & $\rightarrow$ & \nt{term} \nt{args\_n} \\
+  55 & \nt{args\_tail}    & $\rightarrow$ & $\varepsilon$ \quad(koncová čárka) \\
+  56 & \nt{term}          & $\rightarrow$ & \term{lit} \\
+  57 & \nt{term}          & $\rightarrow$ & \term{true} \\
+  58 & \nt{term}          & $\rightarrow$ & \term{false} \\
+  59 & \nt{term}          & $\rightarrow$ & \term{id} \\
+  60 & \nt{term}          & $\rightarrow$ & \term{(} \term{)} \\
+  61 & \nt{term}          & $\rightarrow$ & \nt{istr} \\
+  62 & \nt{istr}          & $\rightarrow$ & \term{s\uvz} \nt{istr\_parts} \term{\uvz} \\
+  63 & \nt{istr\_parts}   & $\rightarrow$ & \nt{istr\_part} \nt{istr\_parts} \\
+  64 & \nt{istr\_parts}   & $\rightarrow$ & $\varepsilon$ \\
+  65 & \nt{istr\_part}    & $\rightarrow$ & \term{lit} \quad(text řetězce) \\
+  66 & \nt{istr\_part}    & $\rightarrow$ & \term{id} \quad(\term{\$id}) \\
+  67 & \nt{istr\_part}    & $\rightarrow$ & \term{\$\{} \nt{expr} \term{\}} \\
   \bottomrule
 \end{longtable}
 
 \subsection{LL tabulka}
-% Široká tabulka je na otočené stránce; adjustbox ji zmenší jen pokud se nevejde.
-% Pokud se vejde na výšku, prostředí landscape stačí smazat.
-\begin{landscape}
-\begin{table}[p]
-  \centering
-  \caption{LL tabulka (v~buňkách čísla pravidel z~tab.~\ref{tab:grammar}) \TODO{}}
-  \label{tab:ll}
-  \begin{adjustbox}{max width=\linewidth}
-  \begin{tabular}{|l|*{8}{c|}}
-    \hline
-    & \term{id} & \term{(} & \term{)} & \term{=} & \term{if} & \term{while} & \term{EOL} & \term{EOF} \\
-    \hline
-    \nt{prog}       &   &   &   &   &   &   &   & 1 \\ \hline
-    \nt{func\_list} & 2 &   &   &   &   &   &   & 3 \\ \hline
-    \nt{stmt}       & 4 &   &   &   &   &   &   &   \\ \hline
-  \end{tabular}
-  \end{adjustbox}
-\end{table}
-\end{landscape}
+Podle tabulky parser vybírá pravidlo z~neterminálu (řádek) a aktuálního
+tokenu (sloupec). Sloupec \term{typ} zastupuje \term{Int}, \term{Double},
+\term{String}, \term{Unit} a~\term{Boolean}, sloupec \term{bool} literály
+\term{true} a~\term{false}.
 
-\subsection{Precedenční tabulka}
+Jediné místo, kde jeden token nestačí, je \term{id} na začátku příkazu
+(buňky s~\textbf{*}): může jít o~přiřazení (\term{id =}), volání
+(\term{id (}) nebo výraz. Parser zavolá \id{peek()} a rozhodne
+se podle druhého tokenu.
+
 \begin{table}[H]
   \centering
-  \caption{Precedenční tabulka pro výrazy \TODO{}}
-  \label{tab:prec}
-  \begin{tabular}{|c|*{7}{c|}}
+  \caption{LL tabulka (v~buňkách čísla pravidel z~tab.~\ref{tab:grammar})}
+  \label{tab:ll}
+  \scriptsize
+  \setlength{\tabcolsep}{2.5pt}
+  \newcommand{\rh}[1]{\rotatebox{90}{#1}} % svisle zahlavi sloupcu
+  \begin{adjustbox}{max width=\linewidth, max totalheight=0.8\textheight}
+  \begin{tabular}{|l|*{27}{c|}}
     \hline
-    & \term{+-} & \term{*/} & \term{rel} & \term{(} & \term{)} & \term{i} & \term{\$} \\ \hline
-    \term{+-}  & $>$ & $<$ & $>$ & $<$ & $>$ & $<$ & $>$ \\ \hline
-    \term{*/}  & $>$ & $>$ & $>$ & $<$ & $>$ & $<$ & $>$ \\ \hline
-    \term{rel} & $<$ & $<$ &     & $<$ & $>$ & $<$ & $>$ \\ \hline
-    \term{(}   & $<$ & $<$ & $<$ & $<$ & $=$ & $<$ &     \\ \hline
-    \term{)}   & $>$ & $>$ & $>$ &     & $>$ &     & $>$ \\ \hline
-    \term{i}   & $>$ & $>$ & $>$ &     & $>$ &     & $>$ \\ \hline
-    \term{\$}  & $<$ & $<$ & $<$ & $<$ &     & $<$ &     \\ \hline
+    & \rh{\term{EOL}} & \rh{\term{EOF}} & \rh{\term{import}} & \rh{\term{def}} & \rh{\term{@main}} & \rh{\term{id}} & \rh{\term{(}} & \rh{\term{)}} & \rh{\term{,}} & \rh{\term{:}} & \rh{\term{=}} & \rh{\term{;}} & \rh{\term{INDENT}} & \rh{\term{DEDENT}} & \rh{\term{val}} & \rh{\term{var}} & \rh{\term{return}} & \rh{\term{if}} & \rh{\term{else}} & \rh{\term{while}} & \rh{\term{typ}} & \rh{\term{lit}} & \rh{\term{bool}} & \rh{\term{-}} & \rh{\term{!}} & \rh{\term{s\uvz}} & \rh{\term{\$\{}} \\ \hline
+    \nt{prog}           & 1  &    & 1  &    &    &      &    &    &    &    &    &    &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{eols}           & 2  & 3  & 3  & 3  & 3  &      &    &    &    &    &    &    &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{func\_list}     &    & 5  &    & 4  & 4  &      &    &    &    &    &    &    &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{func}           &    &    &    & 6  & 6  &      &    &    &    &    &    &    &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{main\_opt}      &    &    &    & 8  & 7  &      &    &    &    &    &    &    &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{params}         &    &    &    &    &    & 9    &    & 10 &    &    &    &    &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{params\_n}      &    &    &    &    &    &      &    & 12 & 11 &    &    &    &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{params\_tail}   &    &    &    &    &    & 13   &    & 14 &    &    &    &    &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{param}          &    &    &    &    &    & 15   &    &    &    &    &    &    &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{ret\_type}      &    &    &    &    &    &      &    &    &    & 16 & 17 &    &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{type}           &    &    &    &    &    &      &    &    &    &    &    &    &    &    &    &    &    &    &    &    & 18--22&    &       &    &    &    &    \\ \hline
+    \nt{body}           & 23 &    &    &    &    & 24   & 24 &    &    &    &    &    &    &    &    &    &    &    &    &    &       & 24 & 24    & 24 & 24 & 24 &    \\ \hline
+    \nt{block}          &    &    &    &    &    &      &    &    &    &    &    &    & 25 &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{stmt\_list}     &    &    &    &    &    & 26   & 26 &    &    &    &    &    &    &    & 26 & 26 & 26 & 27 &    & 27 &       & 26 & 26    & 26 & 26 & 26 &    \\ \hline
+    \nt{stmt\_end}      & 28 &    &    &    &    &      &    &    &    &    &    & 29 &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{stmt\_list\_n}  &    &    &    &    &    & 30   & 30 &    &    &    &    &    &    & 31 & 30 & 30 & 30 & 30 &    & 30 &       & 30 & 30    & 30 & 30 & 30 &    \\ \hline
+    \nt{simple\_stmt}   &    &    &    &    &    & 35/36* & 36 &  &    &    &    &    &    &    & 32 & 33 & 34 &    &    &    &       & 36 & 36    & 36 & 36 & 36 &    \\ \hline
+    \nt{type\_opt}      &    &    &    &    &    &      &    &    &    & 37 & 38 &    &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{ret\_val}       & 40 &    &    &    &    & 39   & 39 &    &    &    &    & 40 &    &    &    &    &    &    &    &    &       & 39 & 39    & 39 & 39 & 39 &    \\ \hline
+    \nt{compound\_stmt} &    &    &    &    &    &      &    &    &    &    &    &    &    &    &    &    &    & 41 &    & 42 &       &    &       &    &    &    &    \\ \hline
+    \nt{if\_stmt}       &    &    &    &    &    &      &    &    &    &    &    &    &    &    &    &    &    & 43 &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{else\_part}     &    &    &    &    &    & 45   & 45 &    &    &    &    &    &    & 45 & 45 & 45 & 45 & 45 & 44 & 45 &       & 45 & 45    & 45 & 45 & 45 &    \\ \hline
+    \nt{else\_rest}     & 46 &    &    &    &    &      &    &    &    &    &    &    &    &    &    &    &    & 47 &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{expr\_or\_call} &    &    &    &    &    & 48/49* & 49 &  &    &    &    &    &    &    &    &    &    &    &    &    &       & 49 & 49    & 49 & 49 & 49 &    \\ \hline
+    \nt{args}           &    &    &    &    &    & 50   & 50 & 51 &    &    &    &    &    &    &    &    &    &    &    &    &       & 50 & 50    &    &    & 50 &    \\ \hline
+    \nt{args\_n}        &    &    &    &    &    &      &    & 53 & 52 &    &    &    &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{args\_tail}     &    &    &    &    &    & 54   & 54 & 55 &    &    &    &    &    &    &    &    &    &    &    &    &       & 54 & 54    &    &    & 54 &    \\ \hline
+    \nt{term}           &    &    &    &    &    & 59   & 60 &    &    &    &    &    &    &    &    &    &    &    &    &    &       & 56 & 57/58 &    &    & 61 &    \\ \hline
+    \nt{istr}           &    &    &    &    &    &      &    &    &    &    &    &    &    &    &    &    &    &    &    &    &       &    &       &    &    & 62 &    \\ \hline
+    \nt{istr\_parts}    &    &    &    &    &    & 63   &    &    &    &    &    &    &    &    &    &    &    &    &    &    &       & 63 &       &    &    &    & 63 \\ \hline
+    \nt{istr\_part}     &    &    &    &    &    & 66   &    &    &    &    &    &    &    &    &    &    &    &    &    &    &       & 65 &       &    &    &    & 67 \\ \hline
   \end{tabular}
+  \end{adjustbox}
+
+  \vspace{0.3cm}
+  \small Pravidlo 64 (\nt{istr\_parts} $\rightarrow \varepsilon$) se použije
+  na koncovou uvozovku interpolovaného řetězce (token \term{ISTR\_END}). (pravidlo není v tabulce, kvůli šířce tabulky...).
 \end{table}
 
-% ---------------------------------------------------------------------
+\subsection{Precedenční syntaktická analýza výrazů}\label{sec:prec}
+Výrazy zpracovává funkce parse\_expr pomocí zásobníku a precedenční
+tabulky (tab.~\ref{tab:prec}). Na dně zásobníku je \term{\$}, za ním se
+ukládají terminály, neterminály \texttt{E} a značky \texttt{<}. Podle
+nejvyššího terminálu na zásobníku a vstupního tokenu tabulka určí akci:
+\begin{itemize}
+  \item \texttt{<} -- za nejvyšší terminál vloží značku a token přesune na zásobník,
+  \item \texttt{=} -- token jen přesune (pouze dvojice \term{(} \term{)}),
+  \item \texttt{>} -- redukce: vše nad poslední značkou se nahradí jedním \texttt{E},
+  \item prázdné políčko -- syntaktická chyba.
+\end{itemize}
+Redukce (funkce reduce() ) odpovídají pravidlům \texttt{E $\rightarrow$ i}, \texttt{E $\rightarrow$ (E)},
+\texttt{E $\rightarrow$ -E}, \texttt{E $\rightarrow$ !E} a
+\texttt{E $\rightarrow$ E op E}. Každá redukce rovnou vytvoří uzel AST
+(make\_binop, make\_unop). Analýza končí, když je na vstupu token,
+který do výrazu nepatří (\term{then}, \term{do}, \term{EOL}, atd.), a na
+zásobníku zbyde jen \term{\$}\,\texttt{E}.
+
+Unární a binární minus rozlišuje parser podle předchozího symbolu: když před
+\term{-} stojí operand nebo \term{)}, jde o~binární operátor. Dvojice
+\term{()} je hodnota typu \term{Unit}, tedy term \term{i}. Interpolovaný
+řetězec je také jeden term, jeho vnitřní \term{\$\{\dots\}} se zpracuje
+rekurzivním voláním \id{parse\_expr}. Relační operátory a \term{== !=}
+nejsou asociativní, proto \texttt{a < b < c} skončí chybou.
+
+\begin{table}[H]
+  \centering
+  \caption{Precedenční tabulka pro výrazy (včetně rozšíření BOOLTHEN);
+           řádek = nejvyšší terminál na zásobníku, sloupec = vstupní token}
+  \label{tab:prec}
+  \begin{tabular}{|c|*{11}{c|}}
+    \hline
+               & \term{- !} & \term{* /} & \term{+ -} & \term{rel} & \term{== !=} & \term{\&\&} & \term{||} & \term{(} & \term{)} & \term{i} & \term{\$} \\ \hline
+    \term{- !}   & $<$ & $>$ & $>$ & $>$ & $>$ & $>$ & $>$ & $<$ & $>$ & $<$ & $>$ \\ \hline
+    \term{* /}   & $<$ & $>$ & $>$ & $>$ & $>$ & $>$ & $>$ & $<$ & $>$ & $<$ & $>$ \\ \hline
+    \term{+ -}   & $<$ & $<$ & $>$ & $>$ & $>$ & $>$ & $>$ & $<$ & $>$ & $<$ & $>$ \\ \hline
+    \term{rel}   & $<$ & $<$ & $<$ &     & $>$ & $>$ & $>$ & $<$ & $>$ & $<$ & $>$ \\ \hline
+    \term{== !=} & $<$ & $<$ & $<$ & $<$ &     & $>$ & $>$ & $<$ & $>$ & $<$ & $>$ \\ \hline
+    \term{\&\&}  & $<$ & $<$ & $<$ & $<$ & $<$ & $>$ & $>$ & $<$ & $>$ & $<$ & $>$ \\ \hline
+    \term{||}    & $<$ & $<$ & $<$ & $<$ & $<$ & $<$ & $>$ & $<$ & $>$ & $<$ & $>$ \\ \hline
+    \term{(}     & $<$ & $<$ & $<$ & $<$ & $<$ & $<$ & $<$ & $<$ & $=$ & $<$ &     \\ \hline
+    \term{)}     &     & $>$ & $>$ & $>$ & $>$ & $>$ & $>$ &     & $>$ &     & $>$ \\ \hline
+    \term{i}     &     & $>$ & $>$ & $>$ & $>$ & $>$ & $>$ &     & $>$ &     & $>$ \\ \hline
+    \term{\$}    & $<$ & $<$ & $<$ & $<$ & $<$ & $<$ & $<$ & $<$ &     & $<$ &     \\ \hline
+  \end{tabular}
+
+  \vspace{0.2cm}
+  \small \term{- !} jsou unární operátory, \term{+ -} binární, \term{rel} jsou \term{<}, \term{<=}, \term{>}, \term{>=}
+\end{table}
+
+
 \section{Popis modulů}
-% ---------------------------------------------------------------------
+
 \begin{description}[style=nextline]
-  \item[\id{main.c}] \TODO{Vstupní bod, propojení modulů a předání návratového kódu.}
-  \item[\id{scanner.c/h}] \TODO{Konečný automat převádějící vstup na tokeny.}
-  \item[\id{parser.c/h}] \TODO{Rekurzivní sestup, stavba AST.}
-  \item[\id{expr.c/h}] \TODO{Precedenční analýza výrazů nad zásobníkem.}
+  \item[\id{main.c}] Vstupní bod, kde se propojí všechny části a vrátí se navratový kod.
+  \item[\id{scanner.c}] Obsahuje pouze konečný automat implementovaný  v jazyku C jako swtich funkce se všemi stavy konečného automatu.
+  \item[\id{token.c/h}] Pomocné funkce pro scanner.c + definice jednotlivých typů tokenů pro použití v dalších částech překladače.
+ \item[\id{parser.c/h}] Syntaktický analyzátor. Rekurzivní sestup podle
+       LL(1) gramatiky, precedenční analýza výrazů nad zásobníkem
+       a stavba abs. syntaktického stromu. Rozhraním je jediná
+       funkce \id{parse\_program()}, která vrací kořen AST.
+ \item[\id{tree.c/h}] Abstraktní syntaktický strom: definice uzlů
+       (\id{NodeKind}, \id{struct Node}) a jejich konstruktory
+       \id{make\_x}, které volá parser.
   \item[\id{symtable.c/h}] \TODO{Tabulka s~rozptýlenými položkami s~otevřenou adresací
         (varianta TRP-izp); rozptylovací funkce \dots, řešení kolizí \dots}
-  \item[\id{semantic.c/h}] \TODO{Typová kontrola, kontrola definic\,\dots}
+  \item[\id{analyzer.c/h,}]\ Kontroluje definice proměnných funkcí, návratové typz funkcí, kompatibilita datových typů.
   \item[\id{codegen.c/h}] \TODO{Generování cílového kódu z~AST.}
-  \item[\id{error.c/h}] \TODO{Jednotné hlášení chyb a návratové kódy.}
 \end{description}
 
-% ---------------------------------------------------------------------
-\section{Využití prostředků AI}
-% ---------------------------------------------------------------------
-\TODO{Které nástroje, k~čemu (např. návrh testů, revize textu dokumentace), v~jakém rozsahu
-a jak byly výstupy ověřeny. Pokud AI nebyla využita, uveďte to.}
 
-% ---------------------------------------------------------------------
-%  CITACE
-% ---------------------------------------------------------------------
+\section{Využití prostředků AI}
+
+Každý používal vlastní AI modely, mezi které patřil například model opus 5.5 od společnosti Anthropic.
+
+Následně i bylo testováno využití MCP sevrerů. Umělá inteligence má díky tomu přístup kamkoliv, kam uživatel dovolí. Používala se například na rychlé kontroly chyb, revize a automatické ukládání na GitHub.
+
+AI bylo využito především ve hledání informací, hledání alternativních a chytřejších řešení pro různé části překladače. Nemalou pomoc také byla pro dodělání repetetivních úkolů podle specifických zadání.
+V dokumentaci bylo ai například využito pro najití nejlepšího řešení na vykreslení diagramů, kdy nám Claude opus 5.5 poradil použít knihovnu pro LaTeX, namísto vkládání obrázků z draw.io.
+
+Další velká pomoc byla právě například ve Scanner, kdy jsme předělali scanner tak, aby právě rozdělení identifikátorů a klíčových slov probíhalo až potom.
+
+Také byl použit při dosazovani analyzer kdy jsem potreboval sjednotit datove typy do abych je mohl porovnávat. Nechal jsem si tedy vytvorit 2 funcke get_type() a set_type() a nechal je volat na mistech kde jsou potreba.
+
+
+
+
 \renewcommand{\refname}{Literatura}
 \begin{thebibliography}{9}
 \addcontentsline{toc}{section}{\refname}
   \bibitem{ial}
-    \TODO{Autor}. \emph{Algoritmy (IAL) -- přednáškové opory: Tabulky s~rozptýlenými položkami}.
-    Brno: VUT FIT, \TODO{rok}.
+    Prof. Ing.Jan M Honzík, CSc. \emph{Algoritmy (IAL) -- studijní opora: Tabulky s~rozptýlenými položkami}.
+    Brno: VUT FIT, 2014.
   \bibitem{ifj}
-    \TODO{Autor}. \emph{Formální jazyky a překladače (IFJ) -- přednášky}. Brno: VUT FIT, \TODO{rok}.
+    Alexander Meduna a Roman Lukáš. \emph{Formální jazyky a překladače (IFJ) -- přednášky}. Brno: VUT FIT, 2025.
   \bibitem{hash}
-    \TODO{Autor}. \emph{Název zdroje rozptylovací funkce} [online]. \TODO{rok}.
-    Dostupné z:~\url{https://TODO}
+    Nora Sandler \emph{Writing a C Compiler, Part 1} [online] 2017.
+    Dostupné z: \url{https://norasandler.com/2017/11/29/Write-a-Compiler.html}
+    \bibitem{latex}
+    LaTeX. \emph{Vykreslování diagramů, úprava dokumentace atd.} [online]. 2026.
+    Dostupné z:~\url{https://www.learnlatex.org/en/}
 \end{thebibliography}
 
 \end{document}
