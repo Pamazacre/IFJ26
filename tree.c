@@ -1,3 +1,10 @@
+/*
+ * Implementace překladače imperativního jazyka IFJ26
+ *
+ * tree.c -- tvoreni uzlu AST
+ * Autor: xsenkyp00 (Pavel Šenkýř)
+ */
+
 #include "tree.h"
 #include <stdio.h>
 #include <stdlib.h>

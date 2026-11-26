@@ -1,5 +1,12 @@
-#include "../Token/token.h"
-#include "../Tree/tree.h"
+/*
+ * Implementace překladače imperativního jazyka IFJ26
+ *
+ * parser.c -- syntax. preklad
+ * Autor: xsenkyp00 (Pavel Šenkýř)
+ */
+
+#include "/Token/token.h"
+#include "tree.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
