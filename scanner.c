@@ -31,6 +31,7 @@ static int pending_dedent = 0; // kolik )) jeste zbyva vratit
 static int last_eol = 1;
 static int paren_nl = 0;     // byl konec radku uvnitr zavorek
 static int paren_indent = 0; // mezery na zacatku radku uvnitr zavorek
+static int first_tok = 0;    // dalsi token je prvni na logickem radku
 // pomocne pro rozsireni INTERPOLATEDS
 static int istr = 0;
 static int istr_expr = 0;
@@ -47,6 +48,8 @@ typedef enum { // podobně jako v token.h - jedná se o jakousi kolekci VŠECH
   S_START, /*Začátek každého slova - rozřazení do jednoho z pěti základních
               "stromů"*/
   S_INT0,       /*Číslo začínající 0 -> může to být double / chbya*/
+  S_INT0_D,     /* 0 a dalsi cislice -> musi to byt double (00.5)*/
+  S_INT0_U,     /* podtrzitko za cislici s nulou na zacatku*/
   S_INT,        /*Koncový stav pro INT*/
   S_INT__,      /* Z int -> double*/
   S_EOF,        /* koncový stav pro End of line*/
@@ -98,6 +101,15 @@ static int set_double(Token *t, const char *s) {
   if (isinf(t->doubleValue))
     return 1;
   return 0;
+}
+
+// zjisti, jestli '/' zacina komentar (podiva se na dalsi znak a vrati ho zpet)
+static int comment_start(int c) {
+  if (c != '/')
+    return 0;
+  int next = getchar();
+  ungetc(next, stdin);
+  return next == '/' || next == '*';
 }
 
 static TokenType keyword(const char *s) {
@@ -159,6 +171,7 @@ int get_token(Token *t) {
   int len = 0;
   int depth = 0;
   int comment_nl = 0;
+  int first_on_line = 0;
   *t = (Token){0};
 
   if (pending_dedent > 0) {
@@ -199,6 +212,8 @@ int get_token(Token *t) {
 
     case S_START:     // opsání tabulky přechodů stavů ze Startu
       t->line = line; // token začíná na aktuálním řádku
+      first_on_line = first_tok;
+      first_tok = 0;
 
       if (c == '\n') {
         line++;
@@ -249,6 +264,7 @@ int get_token(Token *t) {
       else if (line_start && c != '/') {
         line_start = 0;
         last_eol = 0;
+        first_tok = 1;
         if (tab_at_start)
           return 1;
         ungetc(c, stdin);
@@ -273,8 +289,10 @@ int get_token(Token *t) {
       }
       // radek uvnitr zavorek musi byt odsazeny vic nez zacatek prikazu,
       // jen ) muze byt na stejne urovni (napr. po koncove carce)
-      else if (paren_nl && c != '/') {
+      else if (paren_nl && !comment_start(c)) {
         paren_nl = 0;
+        if (c == ')' && paren_indent < indent)
+          return 2;
         if (c != ')' && paren_indent <= indent)
           return 2;
         ungetc(c, stdin);
@@ -339,6 +357,14 @@ int get_token(Token *t) {
       }
 
       else if (c == '-') {
+        // radek nesmi zacinat operatorem, "- 2" na zacatku radku je binarni
+        // minus (-x bez mezery je unarni a to je ok)
+        if (first_on_line) {
+          int next = getchar();
+          ungetc(next, stdin);
+          if (next == ' ' || next == '\t')
+            return 2;
+        }
         t->type = TOKEN_MINUS;
         return 0;
       }
@@ -401,8 +427,12 @@ int get_token(Token *t) {
         state = S_EXP;
       }
 
-      else if (((c >= '0') && c <= '9') || c == '_') {
-        return 1;
+      // 00.5 je platny double, ale 01 jako int ne -> rozhodne se az pozdeji
+      else if ((c >= '0') && c <= '9') {
+        buf[len++] = c;
+        state = S_INT0_D;
+      } else if (c == '_') {
+        state = S_INT0_U;
       }
 
       else { // uvažuji, že už jde o jiné slovo, musím se tedy posunout zpět
@@ -412,6 +442,31 @@ int get_token(Token *t) {
         return 0;
       }
 
+      break;
+
+    case S_INT0_D: // za nulou musi nakonec prijit . nebo exponent
+      if (c >= '0' && c <= '9') {
+        buf[len++] = c;
+      } else if (c == '_') {
+        state = S_INT0_U;
+      } else if (c == '.') {
+        buf[len++] = c;
+        state = S_INT_DOT;
+      } else if (c == 'e' || c == 'E') {
+        buf[len++] = c;
+        state = S_EXP;
+      } else
+        return 1; // 01 neni platny int
+      break;
+
+    case S_INT0_U:
+      if (c >= '0' && c <= '9') {
+        buf[len++] = c;
+        state = S_INT0_D;
+      } else if (c == '_') {
+        // vic podtrzitek za sebou je taky ok
+      } else
+        return 1;
       break;
 
     case S_INT:
