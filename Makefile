@@ -1,6 +1,6 @@
- # Makefile pro prekladac jazyka IFJ26*
-# parser.c -- ...
-# Autor: xsenkyp00 (Pavel Šenkýř)
+# Makefile pro prekladac jazyka IFJ26*
+# MAKEFILE
+# Autor: xnemecm00 (Matyas Nemecek)
 
 # make        - prelozi projekt (vysledek je ./ifj26)
 # make test   - spusti testy ze slozky tests/
