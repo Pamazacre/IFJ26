@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include ".vscode/analyzer.h"
-#include "Tree/tree.h"
+#include "analyzer.h"
+#include "tree.h"
 #include "symtable.h"
 
 #include <string.h>
