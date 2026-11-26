@@ -1,10 +1,16 @@
+/*
+* Implementace překladače imperativního jazyka IFJ26
+*
+* tree.h --
+* Autor: xsenkyp00 (Pavel Šenkýř)
+*/
+
 #ifndef TREE_H
 #define TREE_H
 
-#include "../Token/token.h"
+#include "token.h"
 
-typedef enum
-{
+typedef enum {
   N_NUM,
   N_VAR,
   N_BINOP,
@@ -20,42 +26,32 @@ typedef enum
   N_UNIT,
   N_STRING,
   N_UNOP,
-  N_DOUBLE
+  N_DOUBLE,
+  // nase rozsireni
+  N_BOOL,
+  N_ISTR
 } NodeKind;
 
-typedef enum
-{
-  D_INT,
-  D_FLOAT,
-  D_STRING,
-  D_BOOL,
-  D_UNIT,
-  D_UNKNOWN
-} DataType;
+typedef enum { D_INT, D_FLOAT, D_STRING, D_BOOL, D_UNIT, D_UNKNOWN, D_UNDEFINED } DataType;
 
 // Parametry pro funkce
-typedef struct
-{
+typedef struct {
   char *name;
   DataType type;
 } Param;
 
 typedef struct Node Node;
-struct Node
-{
+struct Node {
   NodeKind kind;
   int line;
   DataType dataType;
 
-  union
-  {
-    struct
-    {
+  union {
+    struct {
       Node **funcs;
       int count;
     } program;
-    struct
-    {
+    struct {
       char *name;
       Param *params;
       int nparams;
@@ -63,67 +59,63 @@ struct Node
       Node *body;
       int is_main;
     } func;
-    struct
-    {
+    struct {
       char *name;
       int is_mutable;
       DataType declared;
       Node *init;
     } vardef;
-    struct
-    {
+    struct {
       char *name;
       Node **args;
       int nargs;
     } call;
-    struct
-    {
+    struct {
       Node *value;
     } ret;
-    struct
-    {
+    struct {
       long long value;
     } num;
-    struct
-    {
+    struct {
       char *name;
     } var;
-    struct
-    {
+    struct {
       TokenType op;
       Node *l, *r;
     } binop;
-    struct
-    {
+    struct {
       char *name;
       Node *value;
     } assign;
-    struct
-    {
+    struct {
       Node *cond, *then_b, *else_b;
     } if_;
-    struct
-    {
+    struct {
       Node *cond, *body;
     } while_;
-    struct
-    {
+    struct {
       Node **stmts;
       int count;
     } block;
-    struct
-    {
+    struct {
       double value;
     } double_;
-    struct
-    {
+    struct {
       char *value;
     } string;
-    struct
-    {
+    struct {
       TokenType op;
       Node *operand;
     } unop;
+
+    struct {
+      int value; // 1 / 0, proste klasicky bool
+    } bool_;
+
+    struct {
+      Node **parts; //
+      int count;
+    } istr;
   } as;
 };
 
@@ -141,13 +133,17 @@ Node *make_string(char *value, int line);
 Node *make_unit(int line);
 Node *make_var(char *name, int line);
 Node *make_assign(char *name, Node *value, int line);
-Node *make_vardef(char *name, int is_mutable, DataType declared, Node *init, int line);
+Node *make_vardef(char *name, int is_mutable, DataType declared, Node *init,
+                  int line);
 Node *make_call(char *name, int line);
 Node *make_return(Node *value, int line);
 Node *make_if(Node *cond, Node *then_b, Node *else_b, int line);
 Node *make_while(Node *cond, Node *body, int line);
 Node *make_program(int line);
 Node *make_func(char *name, int is_main, int line);
+Node *make_bool(int value, int line);
+Node *make_istr(int line);
+void istr_add(Node *s, Node *part);
 
 void print_node(Node *n, int depth);
 
