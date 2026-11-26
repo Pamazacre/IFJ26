@@ -1,4 +1,3 @@
-
 \documentclass[a4paper,11pt]{article}
 
 \usepackage[utf8]{inputenc}
@@ -28,9 +27,9 @@
 \usepackage[hidelinks]{hyperref}
 \usepackage{url}
 
-\newcommand{\id}[1]{\texttt{#1}}       % identifikátory pevnou šířkou
-\newcommand{\nt}[1]{\ensuremath{\langle\mathit{#1}\rangle}} % neterminál
-\newcommand{\term}[1]{\texttt{#1}}     % terminál
+\newcommand{\id}[1]{\texttt{#1}}
+\newcommand{\nt}[1]{\ensuremath{\langle\mathit{#1}\rangle}}
+\newcommand{\term}[1]{\texttt{#1}}
 \newcommand{\TODO}[1]{\textcolor{red}{\textbf{TODO:} #1}}
 
 \begin{document}
@@ -48,7 +47,6 @@
   {\large Tým \id{xnemecm00}, varianta \textbf{TRP-izp}\par}
   \vspace{1.5cm}
 
-  % Vedoucí týmu tučně!
   \begin{tabular}{l l r r}
     \toprule
     \textbf{Jméno a příjmení} & \textbf{Login} & \textbf{Osobní číslo} & \textbf{Body} \\
@@ -73,9 +71,8 @@
 \tableofcontents
 \newpage
 
-% ---------------------------------------------------------------------
 \section{Práce v týmu}
-% ---------------------------------------------------------------------
+
 
 \subsection{Rozdělení práce}
 \begin{itemize}
@@ -88,12 +85,11 @@
 
 
 \subsection{Spolupráce a code review}
-\begin{itemize}
-  \item Spolupráce probíhala především online, každý měl jednu ze čtyř, teoreticky oddělených, částí.
-  \item Vzájemná kontrola probíhala tak, že 1. kontroloval 2, 2 kontroloval 3, 3 kontroloval 4 a 4 kontroloval prvního. Díky této metodě jsme mohli každý nahlédnout do další části projekt a mít plný přehled.
-  \item GitHub byl použit spíše jako ukládání různých verzí kódu, neprobíhalo žádné schvalování. Kontrola, nebo spíše vysvětlení postupu a odůvodnění kroků, které každý provedl, se vysvětlovali až na prezenčních schůzkách.
+Většinu času jsme pracovali online, každý na jedné ze čtyř částí projektu. Ty jsme si sice rozdělili, ale bylo potřeba rozumět i tomu, jak na sebe navazují.
 
-\end{itemize}
+Kontrolu kódu jsme si rozdělili tak, že první člen kontroloval druhého, druhý třetího, třetí čtvrtého a čtvrtý prvního. Každý se tak dostal i k jiné části než ke své.
+
+GitHub nám sloužil hlavně k ukládání verzí kódu. Změny jsme přes něj formálně neschvalovali, jednotlivá řešení a důvody jejich výběru jsme probírali spíše na osobních schůzkách.
 
 \subsection{Testování}
 \begin{itemize}
@@ -104,16 +100,14 @@
 
 \subsection{Styl formátování kódu}
 \begin{itemize}
-\item proměnné - camel case
+\item proměnné -- camelCase
 \item LLVM
-\item funkce - snake case
+\item funkce -- snake\_case
 \end{itemize}
 
-% ---------------------------------------------------------------------
 \section{Architektura překladače}
-% ---------------------------------------------------------------------
-Obrázek~\ref{fig:arch} zobrazuje jednotlivé části překladače a k nim jejich vstupy a výstupy. Pro vstupy a výstupy jsou dále vyznačené v jaké \textit{podobě} procházejí automatem.
 
+Na obrázku~\ref{fig:arch} je vidět, jak jsou jednotlivé části překladače propojené a v jaké podobě si mezi sebou předávají data.
 
 \begin{figure}[H]
   \centering
@@ -148,13 +142,11 @@ Obrázek~\ref{fig:arch} zobrazuje jednotlivé části překladače a k nim jejic
   \label{fig:arch}
 \end{figure}
 
-% ---------------------------------------------------------------------
 \section{Lexikální analýza}
-% ---------------------------------------------------------------------
-Lexikální analyzátor je implementován jako deterministický konečný automat. \textbf{Klíčová slova jsou podle konečného automatu pouze identifikátory. Klíčová slova jsou identifikována až potom. Výrazně to zjednodušší automat.}
 
-Všechny stavy jsou pojemenovány přesně tak, jak jsou poté implementovány v scanner.c. Diagramy jsou vykresleny pomocí tikz library pro LaTeX editor. Pro lepší přehlednost je automatu rozdělený na 8 částí, jde ale samozřejmě o jeden konečný automat.
+Lexikální analyzátor jsme implementovali jako deterministický konečný automat. Klíčová slova v něm nejprve zpracováváme stejně jako identifikátory a rozlišujeme je až po jejich načtení. Díky tomu nemusíme mít pro každé klíčové slovo vlastní větev automatu.
 
+Názvy stavů jsme ponechali stejné jako v souboru \id{scanner.c}, aby se dal diagram lépe porovnávat s kódem. Kvůli velikosti jsme automat rozdělili do osmi obrázků vytvořených pomocí TikZ. Pořád se ale jedná o jeden automat.
 
 \providecommand{\term}[1]{\texttt{#1}}
 \providecommand{\uvz}{\symbol{34}}
@@ -441,49 +433,36 @@ Všechny stavy jsou pojemenovány přesně tak, jak jsou poté implementovány v
 
 \begin{figure}[H]
   \centering
-  \resizebox{\linewidth}{!}{%
-  \begin{tikzpicture}[ka]
-    \node[state, initial, initial where=below] (S)   at (0,0)     {S\_START};
-    \node[state, accepting] (EOL) at (4,1.4)   {EOL};
-    \node[state, accepting] (EOF) at (4,-0.4)  {S\_EOF};
-    \node[err]              (X)   at (4,-2)    {chyba 1};
-    \node[state, accepting] (IND) at (-4,1.4)  {INDENT};
-    \node[state, accepting] (DED) at (-4,-0.4) {DEDENT};
-    \node[err]              (X2)  at (-4,-2)   {chyba 2};
+  \begin{tikzpicture}[ka, every node/.append style={font=\footnotesize}]
+    \node[state, initial, initial where=below] (S)   at (0,0)    {S\_START};
+    \node[state, accepting] (EOL) at (6,2.2)   {EOL};
+    \node[state, accepting] (EOF) at (6,0)     {S\_EOF};
+    \node[err]              (X)   at (6,-2.2)  {chyba 1};
+    \node[state, accepting] (IND) at (-6,2.2)  {INDENT};
+    \node[state, accepting] (DED) at (-6,0)    {DEDENT};
+    \node[err]              (X2)  at (-6,-2.2) {chyba 2};
 
     \path (S) edge[loop above] node {mezera, TAB, CR} (S)
-          (S) edge node {LF} (EOL)
-          (S) edge node[pos=0.6] {EOF} (EOF)
-          (S) edge node[swap] {TAB na začátku řádku, jiný znak} (X)
-          (S) edge node[swap] {odsazení $>$ vrchol} (IND)
-          (S) edge node[pos=0.6, swap] {odsazení $<$ vrchol} (DED)
-          (S) edge node {chybné odsazení, \term{- } na začátku řádku} (X2);
-  \end{tikzpicture}}
+          (S) edge node[sloped, above] {LF} (EOL)
+          (S) edge node[above] {EOF} (EOF)
+          (S) edge node[sloped, below, align=center] {TAB na začátku řádku,\\jiný znak} (X)
+          (S) edge node[sloped, above] {odsazení $>$ vrchol} (IND)
+          (S) edge node[above] {odsazení $<$ vrchol} (DED)
+          (S) edge node[sloped, below, align=center] {chybné odsazení,\\\term{- } na začátku řádku} (X2);
+  \end{tikzpicture}
   \caption{KA pro bílé znaky, konec řádku a konec souboru. LF uvnitř závorek se chová jako mezera}
   \label{fig:ka-ws}
 \end{figure}
 
 
 \section{Syntaktická analýza}
-Syntaktický analyzátor (parser.c) je řízen rekurzivním sestupem:
-každý neterminál gramatiky odpovídá jedné funkci parse\_x. Parser si
-drží aktuální token cur a funkcí peek() se umí podívat o~jeden
-token dopředu. Funkci peek() funkce expect(), která kontroluje podle pravidel v dané parse\_x funkci, jestli tam daný token je a posune se dál. Bloky se rozlišují tokeny INDENT
-a DEDENT, které vyrábí scanner podle odsazení.
+Parser (\id{parser.c}) funguje na principu rekurzivního sestupu. Jednotlivým neterminálům odpovídají funkce \id{parse\_x}. Aktuální token je uložen v \id{cur}, pomocí \id{peek()} se můžeme podívat o jeden token dopředu. Funkce \id{expect()} kontroluje očekávaný token a posouvá parser dál. Odsazení bloků nemusíme řešit přímo v parseru, protože ze scanneru dostáváme tokeny \term{INDENT} a \term{DEDENT}.
 
-Výrazy parser předá precedenční analýze
-(funkce parse\_expr, podkap.~\ref{sec:prec}). Výsledkem celé analýzy
-je abstraktní syntaktický strom (AST, tree.c/h), který dál prochází
-sémantická analýza a generátor kódu. Při chybě parser končí návratovým
-kódem~2.
+Výrazy zpracovává samostatná funkce \id{parse\_expr} (viz podkapitola~\ref{sec:prec}). Výstupem parseru je abstraktní syntaktický strom (AST, \id{tree.c/h}), se kterým dále pracuje sémantická analýza a generátor kódu. Při syntaktické chybě parser končí s návratovým kódem~2.
 
+% Ještě ověřit, že přehled rozšíření odpovídá titulní straně.
 \subsection{LL gramatika}
-Gramatika v~tab.~\ref{tab:grammar} odpovídá funkcím parseru.
-Neterminál \nt{expr} se dál nerozvíjí, zpracuje ho precedenční analýza.
-Argumenty volání jsou podle zadání jen termy (\nt{term}), ne výrazy.
-Pravidla 14 a~55 povolují koncovou čárku. Pravidla s~\term{Boolean},
-\term{true}/\term{false}, \term{else if} (47) a \nt{istr} (62--67) patří
-k~rozšířením BOOLTHEN a INTERPOLATEDS.
+Gramatiku v tabulce~\ref{tab:grammar} jsme sestavili podle funkcí parseru. Neterminál \nt{expr} zde dál nerozepisujeme, protože výrazy řeší precedenční analýza. V základním zadání jsou argumenty volání pouze termy (\nt{term}). Koncovou čárku řeší pravidla 14 a~55. Pravidla pro \term{Boolean}, \term{true}/\term{false}, \term{else if} (47) a \nt{istr} (62--67) souvisí s rozšířeními BOOLTHEN a INTERPOLATEDS.
 
 \begin{longtable}{r l c l}
   \caption{LL(1) gramatika jazyka IFJ26 včetně rozšíření BOOLTHEN a INTERPOLATEDS}\label{tab:grammar}\\
@@ -566,15 +545,9 @@ k~rozšířením BOOLTHEN a INTERPOLATEDS.
 \end{longtable}
 
 \subsection{LL tabulka}
-Podle tabulky parser vybírá pravidlo z~neterminálu (řádek) a aktuálního
-tokenu (sloupec). Sloupec \term{typ} zastupuje \term{Int}, \term{Double},
-\term{String}, \term{Unit} a~\term{Boolean}, sloupec \term{bool} literály
-\term{true} a~\term{false}.
+Řádek tabulky odpovídá neterminálu a sloupec aktuálnímu tokenu. Aby tabulka nebyla zbytečně široká, jsou typy \term{Int}, \term{Double}, \term{String}, \term{Unit} a \term{Boolean} společně ve sloupci \term{typ}. Podobně jsou literály \term{true} a \term{false} ve sloupci \term{bool}.
 
-Jediné místo, kde jeden token nestačí, je \term{id} na začátku příkazu
-(buňky s~\textbf{*}): může jít o~přiřazení (\term{id =}), volání
-(\term{id (}) nebo výraz. Parser zavolá \id{peek()} a rozhodne
-se podle druhého tokenu.
+Trochu složitější je rozhodování u \term{id} na začátku příkazu (buňky označené hvězdičkou). Ze samotného identifikátoru ještě nepoznáme, jestli jde o přiřazení, volání funkce, nebo výraz. Proto se pomocí \id{peek()} podíváme na další token.
 
 \begin{table}[H]
   \centering
@@ -582,7 +555,7 @@ se podle druhého tokenu.
   \label{tab:ll}
   \scriptsize
   \setlength{\tabcolsep}{2.5pt}
-  \newcommand{\rh}[1]{\rotatebox{90}{#1}} % svisle zahlavi sloupcu
+  \newcommand{\rh}[1]{\rotatebox{90}{#1}}
   \begin{adjustbox}{max width=\linewidth, max totalheight=0.8\textheight}
   \begin{tabular}{|l|*{27}{c|}}
     \hline
@@ -623,11 +596,11 @@ se podle druhého tokenu.
 
   \vspace{0.3cm}
   \small Pravidlo 64 (\nt{istr\_parts} $\rightarrow \varepsilon$) se použije
-  na koncovou uvozovku interpolovaného řetězce (token \term{ISTR\_END}). (pravidlo není v tabulce, kvůli šířce tabulky...).
+  na koncovou uvozovku interpolovaného řetězce (token \term{ISTR\_END}). Kvůli šířce tabulky jsme toto pravidlo uvedli zvlášť.
 \end{table}
 
 \subsection{Precedenční syntaktická analýza výrazů}\label{sec:prec}
-Výrazy zpracovává funkce parse\_expr pomocí zásobníku a precedenční
+Pro zpracování výrazů používáme funkci parse\_expr pomocí zásobníku a precedenční
 tabulky (tab.~\ref{tab:prec}). Na dně zásobníku je \term{\$}, za ním se
 ukládají terminály, neterminály \texttt{E} a značky \texttt{<}. Podle
 nejvyššího terminálu na zásobníku a vstupního tokenu tabulka určí akci:
@@ -637,14 +610,14 @@ nejvyššího terminálu na zásobníku a vstupního tokenu tabulka určí akci:
   \item \texttt{>} -- redukce: vše nad poslední značkou se nahradí jedním \texttt{E},
   \item prázdné políčko -- syntaktická chyba.
 \end{itemize}
-Redukce (funkce reduce() ) odpovídají pravidlům \texttt{E $\rightarrow$ i}, \texttt{E $\rightarrow$ (E)},
+Redukce ve funkci \id{reduce()} odpovídají pravidlům \texttt{E $\rightarrow$ i}, \texttt{E $\rightarrow$ (E)},
 \texttt{E $\rightarrow$ -E}, \texttt{E $\rightarrow$ !E} a
 \texttt{E $\rightarrow$ E op E}. Každá redukce rovnou vytvoří uzel AST
 (make\_binop, make\_unop). Analýza končí, když je na vstupu token,
 který do výrazu nepatří (\term{then}, \term{do}, \term{EOL}, atd.), a na
 zásobníku zbyde jen \term{\$}\,\texttt{E}.
 
-Unární a binární minus rozlišuje parser podle předchozího symbolu: když před
+U minusu je potřeba rozlišit, jestli jde o unární, nebo binární operátor. Pokud před
 \term{-} stojí operand nebo \term{)}, jde o~binární operátor. Dvojice
 \term{()} je hodnota typu \term{Unit}, tedy term \term{i}. Interpolovaný
 řetězec je také jeden term, jeho vnitřní \term{\$\{\dots\}} se zpracuje
@@ -680,38 +653,25 @@ nejsou asociativní, proto \texttt{a < b < c} skončí chybou.
 \section{Popis modulů}
 
 \begin{description}[style=nextline]
-  \item[\id{main.c}] Vstupní bod, kde se propojí všechny části a vrátí se navratový kod.
-  \item[\id{scanner.c}] Obsahuje pouze konečný automat implementovaný  v jazyku C jako swtich funkce se všemi stavy konečného automatu.
-  \item[\id{token.c/h}] Pomocné funkce pro scanner.c + definice jednotlivých typů tokenů pro použití v dalších částech překladače.
- \item[\id{parser.c/h}] Syntaktický analyzátor. Rekurzivní sestup podle
-       LL(1) gramatiky, precedenční analýza výrazů nad zásobníkem
-       a stavba abs. syntaktického stromu. Rozhraním je jediná
-       funkce \id{parse\_program()}, která vrací kořen AST.
- \item[\id{tree.c/h}] Abstraktní syntaktický strom: definice uzlů
-       (\id{NodeKind}, \id{struct Node}) a jejich konstruktory
-       \id{make\_x}, které volá parser.
-  \item[\id{symtable.c/h}] \TODO{Tabulka s~rozptýlenými položkami s~otevřenou adresací
-        (varianta TRP-izp); rozptylovací funkce \dots, řešení kolizí \dots}
-  \item[\id{analyzer.c/h,}]\ Kontroluje definice proměnných funkcí, návratové typz funkcí, kompatibilita datových typů.
+  \item[\id{main.c}] Vstupní bod překladače. Propojuje jednotlivé části a vrací výsledný návratový kód.
+  \item[\id{scanner.c}] Konečný automat je zde implementován pomocí konstrukce \id{switch} v jazyce C.
+  \item[\id{token.c/h}] Definice typů tokenů a pomocné funkce pro scanner.
+  \item[\id{parser.c/h}] Rekurzivní sestup podle LL(1) gramatiky, precedenční analýza a vytváření AST. Funkce \id{parse\_program()} vrací kořen stromu.
+  \item[\id{tree.c/h}] Definice uzlů AST (\id{NodeKind}, \id{struct Node}) a funkce \id{make\_x}, kterými parser uzly vytváří.
+  \item[\id{symtable.c/h}] \TODO{Tabulka s~rozptýlenými položkami s~otevřenou adresací (varianta TRP-izp); rozptylovací funkce \dots, řešení kolizí \dots}
+  \item[\id{analyzer.c/h}] Kontrola definic proměnných a funkcí, návratových typů a kompatibility datových typů.
   \item[\id{codegen.c/h}] \TODO{Generování cílového kódu z~AST.}
 \end{description}
 
-
 \section{Využití prostředků AI}
 
-Každý používal vlastní AI modely, mezi které patřil například model opus 5.5 od společnosti Anthropic.
+Každý z nás používal vlastní AI nástroje, mimo jiné model Opus 5.5 od společnosti Anthropic. Zkoušeli jsme také MCP servery, přes které lze AI zpřístupnit vybrané nástroje a data. Využívali jsme je například při kontrolách kódu a ukládání změn na GitHub.
 
-Následně i bylo testováno využití MCP sevrerů. Umělá inteligence má díky tomu přístup kamkoliv, kam uživatel dovolí. Používala se například na rychlé kontroly chyb, revize a automatické ukládání na GitHub.
+AI nám pomáhala hlavně při hledání informací, porovnávání možných řešení a při opakujících se úkolech. U dokumentace nám například Claude doporučil TikZ místo vkládání obrázků z \url{https://draw.io}.
 
-AI bylo využito především ve hledání informací, hledání alternativních a chytřejších řešení pro různé části překladače. Nemalou pomoc také byla pro dodělání repetetivních úkolů podle specifických zadání.
-V dokumentaci bylo ai například využito pro najití nejlepšího řešení na vykreslení diagramů, kdy nám Claude opus 5.5 poradil použít knihovnu pro LaTeX, namísto vkládání obrázků z draw.io.
+Jednou z větších změn ve scanneru bylo oddělení rozpoznávání identifikátorů od kontroly klíčových slov. I při hledání tohoto řešení jsme využili AI.
 
-Další velká pomoc byla právě například ve Scanner, kdy jsme předělali scanner tak, aby právě rozdělení identifikátorů a klíčových slov probíhalo až potom.
-
-Také byl použit při dosazovani analyzer kdy jsem potreboval sjednotit datove typy do abych je mohl porovnávat. Nechal jsem si tedy vytvorit 2 funcke get_type() a set_type() a nechal je volat na mistech kde jsou potreba.
-
-
-
+Při práci na sémantické analýze jsme potřebovali sjednotit způsob práce s datovými typy, abychom je mohli porovnávat. S pomocí AI vznikly funkce \id{get\_type()} a \id{set\_type()}, které se volají na potřebných místech.
 
 \renewcommand{\refname}{Literatura}
 \begin{thebibliography}{9}
