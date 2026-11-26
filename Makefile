@@ -10,11 +10,11 @@ CC = gcc
 CFLAGS = -std=c11 -Wall -Wextra -g
 TARGET = ifj26
 
-SRC = scanner.c token.c main.c parser.c tree.c symtable.c
+SRC = scanner.c token.c main.c parser.c tree.c symtable.c analyzer.c
 OBJ = $(SRC:.c=.o)
 HDR = $(wildcard *.h)
 
-.PHONY: all build check build-check test clean
+.PHONY: all build test clean
 
 all: build
 

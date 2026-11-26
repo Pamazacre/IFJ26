@@ -1,9 +1,9 @@
 /*
-* Implementace překladače imperativního jazyka IFJ26
-*
-* parser.c -- syntax. preklad
-* Autor: xsenkyp00 (Pavel Šenkýř)
-*/
+ * Implementace překladače imperativního jazyka IFJ26
+ *
+ * parser.c -- syntax. preklad
+ * Autor: xsenkyp00 (Pavel Šenkýř)
+ */
 
 #include "token.h"
 #include "tree.h"
@@ -68,7 +68,8 @@ typedef struct { // obyc dynam. pole
   int cap;
 } PrecStack;
 
-// prida polozku na vrchol prec. zasobniku, pri zaplneni zdvojnasobi kapacitu (exit 99 kdyz dojde pamet)
+// prida polozku na vrchol prec. zasobniku, pri zaplneni zdvojnasobi kapacitu
+// (exit 99 kdyz dojde pamet)
 static void ps_push(PrecStack *s, PrecItem it) {
   if (s->top == s->cap) { // pole je full -> potreba zvetsit
     if (s->cap == 0)
@@ -91,7 +92,8 @@ static int ps_top_term(PrecStack *s) {
   return -1; // na dne je vzdy $, takze SNAD nenastane
 }
 
-// nacte dalsi token ze scanneru, pri chybe skonci: 1 lex, 2 spatny dedent, 99 interni
+// nacte dalsi token ze scanneru, pri chybe skonci: 1 lex, 2 spatny dedent, 99
+// interni
 static void read_token(Token *t) {
   int rc = get_token(t);
   if (rc == 1)
@@ -102,13 +104,12 @@ static void read_token(Token *t) {
     exit(99); // interni chyba
 }
 
-// posune cur na dalsi token 
+// posune cur na dalsi token
 static void next(void) {
   if (has_la) { // (vezme ho z la, pokud uz byl nacteny pres peek)
     cur = la;
     has_la = 0;
-  }
-  else
+  } else
     read_token(&cur);
 }
 
@@ -226,7 +227,6 @@ static void skip_eols(void) {
     next();
 }
 
-
 static Node *parse_expr(void);
 static Node *parse_block(void);
 
@@ -271,6 +271,7 @@ static void parse_param(Node *f) {
 }
 
 static Node *parse_istr(void);
+static Node *parse_call(void);
 
 // parsne var, nebo ()
 static Node *parse_var(void) {
@@ -287,6 +288,9 @@ static Node *parse_var(void) {
     n = make_string(cur.stringValue, line);
     break;
   case TOKEN_ID:
+    // cele jeden term (FUNEXP)
+    if (peek().type == TOKEN_LPAR)
+      return parse_call();
     n = make_var(cur.stringValue, line);
     break;
   case TOKEN_LPAR: // () = Unit
@@ -308,16 +312,23 @@ static Node *parse_var(void) {
   return n;
 }
 
-// precedencni analyza vyrazu nad zasobnikem podle prec_table, vraci koren podstromu vyrazu
+// precedencni analyza vyrazu nad zasobnikem podle prec_table, vraci koren
+// podstromu vyrazu
 static Node *parse_expr(void) {
   PrecStack s = {0}; // prazdny zasobnik (items=NULL, top=0, cap=0)
   ps_push(&s, (PrecItem){P_END, 0, NULL, cur.line}); // $ na dno
   int prev_operand = 0; // na zacatku nebyl zadny operand
+  int depth = 0;        // pocet otevrenych '(' v tomto vyrazu (funexp)
 
   while (1) {
     PrecSym a = token_to_prec(prev_operand); // co prichazi
-    int t = ps_top_term(&s);                 // kde je nejvyssi terminal
-    PrecSym b = s.items[t].sym;              // co to je
+
+    // funkce, ktere tenhle vyraz (argument) obsahuje -> konec vyrazu
+    if (a == P_RPAR && depth == 0)
+      a = P_END;
+
+    int t = ps_top_term(&s);    // kde je nejvyssi terminal
+    PrecSym b = s.items[t].sym; // co to je
 
     if (a == P_END && b == P_END)
       break; // vstup skoncil a zasobnik je zredukovany -> hotovo
@@ -329,9 +340,13 @@ static Node *parse_expr(void) {
         s.items[i] = s.items[i - 1]; // posunout E (pokud tam je) o 1 nahoru
       s.items[t + 1] = (PrecItem){P_MARK, 0, NULL, 0};
     }
-      // fall through - po vlozeni znacky normalne shift (proto tam neni break, 
+      // fall through - po vlozeni znacky normalne shift (proto tam neni break,
       // ale myslim ze to bude hlasit warning)
     case Q: { // '=' : shift bez znacky
+      if (a == P_LPAR)
+        depth++; // funexp
+      else if (a == P_RPAR)
+        depth--; // funexp
       PrecItem it = {a, cur.type, NULL, cur.line};
       if (a == P_TERM)
         it.node = parse_var(); // vytvori uzel a posune na dalsi token
@@ -339,6 +354,7 @@ static Node *parse_expr(void) {
         next();
       ps_push(&s, it);
       prev_operand = (a == P_TERM || a == P_RPAR);
+      break;
     }
     case R: // '>' : redukce
       reduce(&s);
@@ -386,13 +402,14 @@ static Node *parse_istr(void) {
   return s;
 }
 
-// volani funkce: id ( args ), argumenty jsou jen termy, koncova carka jen pred koncem radku
+// volani funkce: id ( args ), argumenty jsou jen termy, koncova carka jen pred
+// koncem radku
 static Node *parse_call(void) {
   Node *c = make_call(cur.stringValue, cur.line);
   next();
   expect(TOKEN_LPAR);
   if (cur.type != TOKEN_RPAR) {
-    call_add_arg(c, parse_var());
+    call_add_arg(c, parse_expr());
     while (cur.type == TOKEN_COMMA) {
       int comma_line = cur.line;
       next();
@@ -401,19 +418,16 @@ static Node *parse_call(void) {
           error(); // mezi carkou a ) musi byt konec radku
         break;
       }
-      call_add_arg(c, parse_var());
+      call_add_arg(c, parse_expr());
     }
   }
   expect(TOKEN_RPAR);
   return c;
 }
 
-// rozhodne podle id + '(' (peek), jestli jde o volani nebo vyraz
-static Node *parse_expr_or_call(void) {
-  if (cur.type == TOKEN_ID && peek().type == TOKEN_LPAR)
-    return parse_call();
-  return parse_expr();
-}
+// rozhodne podle id + '(' (peek), jestli jde o volani nebo vyraz (tady se to
+// vlastne kvuli funexp zmenilo jenom na parse_expr)
+static Node *parse_expr_or_call(void) { return parse_expr(); }
 
 // jeden prikaz: val/var, return, if, while, prirazeni nebo vyraz/volani
 static Node *parse_stmt(void) {
@@ -502,7 +516,8 @@ static Node *parse_block(void) {
   }
 }
 
-/// telo funkce: bud blok na dalsim radku, nebo jeden vyraz/volani na stejnem radku
+/// telo funkce: bud blok na dalsim radku, nebo jeden vyraz/volani na stejnem
+/// radku
 static Node *parse_body(void) {
   if (cur.type == TOKEN_EOL) {
     next();
