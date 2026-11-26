@@ -354,7 +354,7 @@ static Node *parse_expr(void) {
         next();
       ps_push(&s, it);
       prev_operand = (a == P_TERM || a == P_RPAR);
-      break; // <-- tohle ti v commitu chybi, bez nej to propadne do reduce
+      break;
     }
     case R: // '>' : redukce
       reduce(&s);
