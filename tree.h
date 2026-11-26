@@ -32,7 +32,15 @@ typedef enum {
   N_ISTR
 } NodeKind;
 
-typedef enum { D_INT, D_FLOAT, D_STRING, D_BOOL, D_UNIT, D_UNKNOWN, D_UNDEFINED } DataType;
+typedef enum {
+  D_INT,
+  D_FLOAT,
+  D_STRING,
+  D_BOOL,
+  D_UNIT,
+  D_UNKNOWN,
+  D_UNDEFINED
+} DataType;
 
 // Parametry pro funkce
 typedef struct {
@@ -138,7 +146,8 @@ Node *make_string(char *value, int line);
 Node *make_unit(int line);
 Node *make_var(char *name, int line);
 Node *make_assign(char *name, Node *value, int line);
-Node *make_vardef(char *name, int is_mutable, DataType declared, Node *init, int line);
+Node *make_vardef(char *name, int is_mutable, DataType declared, Node *init,
+                  int line);
 Node *make_call(char *name, int line);
 Node *make_return(Node *value, int line);
 Node *make_if(Node *cond, Node *then_b, Node *else_b, int line);
