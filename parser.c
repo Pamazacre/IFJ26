@@ -505,7 +505,13 @@ static Node *parse_block(void) {
     block_add(blk, s);
     if (s->kind == N_IF || s->kind == N_WHILE) {
       // vnoreny blok uz snedl EOL i DEDENT, oddelovac tu neni
-    } else if (cur.type == TOKEN_EOL || cur.type == TOKEN_SEMICOLON)
+    }
+    else if (cur.type == TOKEN_SEMICOLON){
+      next();
+      if (cur.type == TOKEN_EOL) // ; na konci radku
+        next();
+    }
+    else if (cur.type == TOKEN_EOL)
       next();
     else if (cur.type != TOKEN_DEDENT)
       error(); // dva prikazy bez oddelovace
@@ -524,8 +530,10 @@ static Node *parse_body(void) {
     return parse_block();
   }
   Node *n = parse_expr_or_call();
+  if (cur.type == TOKEN_SEMICOLON) // ; na konci radku
+    next();
   if (cur.type != TOKEN_EOL && cur.type != TOKEN_EOF)
-    error();
+    error(); // za vyrazem neco zbylo
   return n;
 }
 
