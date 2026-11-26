@@ -1,3 +1,10 @@
+/*
+* Implementace překladače imperativního jazyka IFJ26
+*
+* scanner.c - Konecny automat
+* Autor: xnemecm00 (Matyas Nemecek)
+*/
+
 #include "token.h"
 #include <ctype.h>
 #include <errno.h>
