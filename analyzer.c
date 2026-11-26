@@ -149,9 +149,7 @@ int check_vardef(Node *n, symtable_t *st) {
     }
 
     data_type_t initType = get_type(n->as.vardef.init);
-    if (initType == TYPE_BOOLEAN || finalType == TYPE_BOOLEAN) {
-      return 6;
-    }
+
     if (finalType == TYPE_UNKNOWN) {
       finalType = initType;
     }
@@ -284,7 +282,16 @@ int check_binop(Node *n, symtable_t *st) {
     case TOKEN_NEQ:
       set_type(n, TYPE_BOOLEAN);
       break;
-      // prostor pro rozsireni operatoru and or neg
+  case TOKEN_AND:
+  case TOKEN_OR:
+    if (curr != TYPE_BOOLEAN) {
+      fprintf(stderr, "Chyba (radek %d): Operandy logickeho operatoru musi byt typu Boolean\n",
+              n->line);
+      return 6;
+    }
+    set_type(n, TYPE_BOOLEAN);
+    break;
+
 
     default:
       fprintf(stderr, "Chyba (radek %d): Neznamy operator\n", n->line);
@@ -474,7 +481,7 @@ int check_body_result(Node *n, result_t *res) {
   data_type_t final_type = expReturn;
 
   if (!retExplicit) {
-    if (res->kind == RES_VALUE && res->type != TYPE_UNKNOWN && res->type != TYPE_BOOLEAN) {
+    if (res->kind == RES_VALUE && res->type != TYPE_UNKNOWN) {
       final_type = res->type;
     } else if (res->kind == RES_MIXED && res->all_unit) {
       final_type = TYPE_UNIT;
@@ -684,18 +691,26 @@ int check_unop(Node *n, symtable_t *st) {
   if (err != 0) {
     return err;
   }
-  if (n->as.unop.op != TOKEN_MINUS) {
-    fprintf(stderr, "Chyba (radek %d): Neznamy unarni operator\n", n->line);
-    return 6;
-  }
   data_type_t t = get_type(n->as.unop.operand);
-  if (t != TYPE_INT && t != TYPE_DOUBLE) {
-    fprintf(stderr, "Chyba (radek %d): Operand unarniho minus musi byt typu int nebo double\n",
-            n->line);
-    return 6;
+  if (n->as.unop.op == TOKEN_MINUS) {
+    if (t != TYPE_INT && t != TYPE_DOUBLE) {
+      fprintf(stderr, "Chyba (radek %d): Operand unarniho minus musi byt typu int nebo double\n",
+              n->line);
+      return 6;
+    }
+    set_type(n, t);
+    return 0;
   }
-  set_type(n, t);
-  return 0;
+  if (n->as.unop.op == TOKEN_NOT) {
+    if (t != TYPE_BOOLEAN) {
+      fprintf(stderr, "Chyba (radek %d): Operand negace musi byt typu Boolean\n", n->line);
+      return 6;
+    }
+    set_type(n, TYPE_BOOLEAN);
+    return 0;
+  }
+  fprintf(stderr, "Chyba (radek %d): Neznamy unarni operator\n", n->line);
+  return 6;
 }
 
 int check_node(Node *n, symtable_t *st) {
@@ -736,6 +751,9 @@ int check_node(Node *n, symtable_t *st) {
       return 0;
     case N_STRING:
       set_type(n, TYPE_STRING);
+      return 0;
+    case N_BOOL:
+      set_type(n, TYPE_BOOLEAN);
       return 0;
     default:
       return 0;
