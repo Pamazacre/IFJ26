@@ -284,3 +284,83 @@ st_status_t symtable_insert_func(symtable_t *st, const char *name,
   return ST_OK;
 }
 
+
+st_status_t symtable_declare_func(symtable_t *st, const char *name,
+                                  symbol_t **out) {
+  if (out != NULL)
+    *out = NULL;
+
+  node_t *n = table_find(&st->functions, name);
+  if (n == NULL) { /* este o nej nevieme -> forward zaznam, defined=false */
+    n = func_new(st, name, TYPE_UNKNOWN, false);
+    if (n == NULL)
+      return ST_ERR_MEMORY;
+  }
+  /* ak uz existuje (definovana alebo nie) tak len vratime tu istu */
+  if (out != NULL)
+    *out = &n->sym;
+  return ST_OK;
+}
+
+symbol_t *symtable_find_func(const symtable_t *st, const char *name) {
+  node_t *n = table_find(&st->functions, name);
+  return n != NULL ? &n->sym : NULL;
+}
+
+bool symtable_add_param(symbol_t *func, data_type_t type) {
+  if (func == NULL || func->kind != SYM_FUNC)
+    return false; /* niekto poslal premennu, nech to nespadne potichu */
+  size_t count = func->func.param_count;
+  data_type_t *types =
+      realloc(func->func.param_types, (count + 1) * sizeof *types);
+  if (types == NULL)
+    return false; /* povodne pole ostava, nic sa nezmenilo */
+  types[count] = type;
+  func->func.param_types = types;
+  func->func.param_count = count + 1;
+  return true;
+}
+
+bool symtable_insert_builtins(symtable_t *st) {
+  /* vstavane fcie zo specifikacie (sekcia 4), Any = TYPE_ANY
+   * poradie poli v structe je kvoli padingu (clang-tidy sa stazoval) */
+  static const struct {
+    const char *name;
+    size_t param_count;
+    data_type_t ret;
+    data_type_t params[3]; /* max 3 (subStr), zvysok UNKNOWN = nepouzite */
+  } builtins[] = {
+      {"print", 1, TYPE_UNIT, {TYPE_ANY}},
+      {"readLine", 0, TYPE_STRING, {TYPE_UNKNOWN}},
+      {"readInt", 0, TYPE_INT, {TYPE_UNKNOWN}},
+      {"readDouble", 0, TYPE_DOUBLE, {TYPE_UNKNOWN}},
+      {"toStr", 1, TYPE_STRING, {TYPE_ANY}},
+      {"toInt", 1, TYPE_INT, {TYPE_DOUBLE}},
+      {"strLength", 1, TYPE_INT, {TYPE_STRING}},
+      {"subStr", 3, TYPE_STRING, {TYPE_STRING, TYPE_INT, TYPE_INT}},
+      {"ord", 2, TYPE_INT, {TYPE_STRING, TYPE_INT}},
+      {"chr", 1, TYPE_STRING, {TYPE_INT}},
+  };
+
+  for (size_t i = 0; i < sizeof builtins / sizeof builtins[0]; i++) {
+    symbol_t *f = NULL;
+    if (symtable_insert_func(st, builtins[i].name, builtins[i].ret, &f) !=
+        ST_OK)
+      return false; /* bud malloc fail alebo uz tam su (volane 2x?) */
+    f->func.is_builtin = true;
+    for (size_t p = 0; p < builtins[i].param_count; p++)
+      if (!symtable_add_param(f, builtins[i].params[p]))
+        return false;
+  }
+  return true;
+}
+
+void symtable_foreach_func(symtable_t *st, void (*fn)(symbol_t *sym, void *ctx),
+                           void *ctx) {
+  /* prejde vsetky sloty, poradie je "nahodne" (podla hashu), nie abecedne */
+  for (size_t i = 0; i < st->functions.cap; i++)
+    if (st->functions.slots[i] != NULL)
+      fn(&st->functions.slots[i]->sym, ctx);
+}
+
+// EOF-koniec symtable.c konecne
