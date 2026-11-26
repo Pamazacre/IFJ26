@@ -1,5 +1,7 @@
 #include "token.h"
 #include <ctype.h>
+#include <errno.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,10 +22,15 @@ static int indent_stack[INDENT_MAX] = {0}; // odsazeni
 static int indent_top = 0;     // vrchol indentu / chova se jako lifo fronta
 static int pending_dedent = 0; // kolik )) jeste zbyva vratit
 static int last_eol = 1;
+static int paren_nl = 0;     // byl konec radku uvnitr zavorek
+static int paren_indent = 0; // mezery na zacatku radku uvnitr zavorek
 // pomocne pro rozsireni INTERPOLATEDS
 static int istr = 0;
 static int istr_expr = 0;
 static int istr_pending_end = 0;
+// buffer na text tokenu, zvetsuje se podle potreby (retezce muzou byt dlouhe)
+static char *buf = NULL;
+static int buf_cap = 0;
 
 typedef enum { // podobně jako v token.h - jedná se o jakousi kolekci VŠECH
                // stavů, do které se může konečný automat dostat
@@ -76,6 +83,15 @@ typedef enum { // podobně jako v token.h - jedná se o jakousi kolekci VŠECH
   S_OR,
 
 } State;
+
+// ulozi double do tokenu, prilis velke cislo (inf) je lex. chyba
+static int set_double(Token *t, const char *s) {
+  t->type = TOKEN_DOUBLE;
+  t->doubleValue = strtod(s, NULL);
+  if (isinf(t->doubleValue))
+    return 1;
+  return 0;
+}
 
 static TokenType keyword(const char *s) {
   if (strcmp(s, "def") == 0)
@@ -133,7 +149,6 @@ int get_token(Token *t) {
 
   State state = S_START; // první case jde vždy do S_Start
   int c;
-  char buf[64];
   int len = 0;
   int depth = 0;
   int comment_nl = 0;
@@ -159,8 +174,14 @@ int get_token(Token *t) {
 
   while (1) {
 
-    if (len >= 63)
-      return 1; // buffer plný
+    if (len + 2 >= buf_cap) { // buffer plny -> zvetsit na dvojnasobek
+      int new_cap = buf_cap == 0 ? 64 : buf_cap * 2;
+      char *tmp = realloc(buf, new_cap);
+      if (tmp == NULL)
+        return 99;
+      buf = tmp;
+      buf_cap = new_cap;
+    }
     c = getchar();
     // t->type + return 0 = konec switch, přiřazení slova k typu ->konec
     // state = x = přesunutí do dalšího stavu
@@ -183,13 +204,20 @@ int get_token(Token *t) {
             t->type = TOKEN_EOL;
             return 0;
           }
+        } else { // v zavorkach je \n jen bily znak, ale hlida se odsazeni
+          paren_nl = 1;
+          paren_indent = 0;
         }
       } else if (c == ' ') {
         if (line_start)
           indent++;
+        else if (paren_nl)
+          paren_indent++;
       } else if (c == '\t') {
         if (line_start)
           tab_at_start = 1;
+        else if (paren_nl)
+          return 1;
       } else if (c == '\r') {
         // bílý znak přeskočit, zůstat v S_START
       } else if (c == EOF) {
@@ -235,6 +263,14 @@ int get_token(Token *t) {
           t->type = TOKEN_DEDENT;
           return 0;
         }
+      }
+      // radek uvnitr zavorek musi byt odsazeny vic nez zacatek prikazu,
+      // jen ) muze byt na stejne urovni (napr. po koncove carce)
+      else if (paren_nl && c != '/') {
+        paren_nl = 0;
+        if (c != ')' && paren_indent <= indent)
+          return 2;
+        ungetc(c, stdin);
       }
 
       // INT
@@ -387,7 +423,10 @@ int get_token(Token *t) {
         ungetc(c, stdin);
         buf[len] = '\0';
         t->type = TOKEN_INT;
+        errno = 0;
         t->intValue = strtoll(buf, NULL, 10);
+        if (errno == ERANGE)
+          return 1; // cislo se neveslo do long long
         return 0;
       }
 
@@ -397,6 +436,8 @@ int get_token(Token *t) {
       if (c >= '0' && c <= '9') {
         buf[len++] = c;
         state = S_INT;
+      } else if (c == '_') {
+        // vic podtrzitek za sebou je taky ok (1__000)
       } else
         return 1;
       break;
@@ -420,17 +461,13 @@ int get_token(Token *t) {
         state = S_EXP;
       } else if ((c == 'd') || (c == 'D')) {
         buf[len] = '\0';
-        t->type = TOKEN_DOUBLE;
-        t->doubleValue = strtod(buf, NULL);
-        return 0;
+        return set_double(t, buf);
       } else if (c == '_') {
         state = S_FRAC_;
       } else {
         ungetc(c, stdin);
         buf[len] = '\0';
-        t->type = TOKEN_DOUBLE;
-        t->doubleValue = strtod(buf, NULL);
-        return 0;
+        return set_double(t, buf);
       }
       break;
 
@@ -439,6 +476,8 @@ int get_token(Token *t) {
       if (c >= '0' && c <= '9') {
         buf[len++] = c;
         state = S_FRAC;
+      } else if (c == '_') {
+        // vic podtrzitek za sebou je taky ok (1__000)
       } else
         return 1;
       break;
@@ -497,8 +536,11 @@ int get_token(Token *t) {
           ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) || c == '_') {
         buf[len++] = c;
         state = S_ID;
-      } else
-        return 1;
+      } else { // samotne _ neni identifikator, je to jen pro rozsireni
+        ungetc(c, stdin);
+        t->type = TOKEN_RESERVED;
+        return 0;
+      }
       break;
 
     case S_EXP:
@@ -517,22 +559,17 @@ int get_token(Token *t) {
         buf[len++] = c;
       } else if (c == 'd' || c == 'D') {
         buf[len] = '\0';
-        t->type = TOKEN_DOUBLE;
-        t->doubleValue = strtod(buf, NULL);
-        return 0;
+        return set_double(t, buf);
       } else if (c == '_') {
         state = S_EXPD_;
       } else {
         ungetc(c, stdin);
         buf[len] = '\0';
-        t->type = TOKEN_DOUBLE;
-        t->doubleValue = strtod(buf, NULL);
-        return 0;
+        return set_double(t, buf);
       }
       break;
 
     case S_SUFFIX:
-      printf("není ještě hotovo");
       return 1;
 
     case S_EXP_SIGN:
@@ -547,12 +584,14 @@ int get_token(Token *t) {
       if (c >= '0' && c <= '9') {
         buf[len++] = c;
         state = S_EXPD;
+      } else if (c == '_') {
+        // vic podtrzitek za sebou je taky ok (1__000)
       } else
         return 1;
       break;
 
     case S_QFIRST:
-      if (c != '"' && c != '\\' && c != '\n' && c != EOF) {
+      if (c != '"' && c != '\\' && c != '\n' && c != EOF && c != '\0') {
         buf[len++] = c;
         state = S_STR;
       } else if (c == '"') {
@@ -609,20 +648,19 @@ int get_token(Token *t) {
         return 0;
       } else if (c == '\\') {
         state = S_ESC;
-      } else if (c != '\n' && c != EOF) {
+      } else if (c != '\n' && c != EOF && c != '\0') {
         buf[len++] = c;
       } else
         return 1;
       break;
 
     case S_STR_END:
-      printf("není ještě hotovo");
       return 1;
 
     case S_ML:
       if (c == '"') {
         state = S_ML_Q1;
-      } else if (c == EOF)
+      } else if (c == EOF || c == '\0')
         return 1;
       else {
         if (c == '\n')
