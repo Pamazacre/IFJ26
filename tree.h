@@ -1,7 +1,14 @@
+/*
+* Implementace překladače imperativního jazyka IFJ26
+*
+* tree.h --
+* Autor: xsenkyp00 (Pavel Šenkýř)
+*/
+
 #ifndef TREE_H
 #define TREE_H
 
-#include "../Token/token.h"
+#include "token.h"
 
 typedef enum {
   N_NUM,
