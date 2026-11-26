@@ -1,0 +1,220 @@
+% =====================================================================
+% Nahrada celé sekce "Syntaktická analýza" (od \section{Syntaktická analýza}
+% az po \section{Popis modulů}).
+% =====================================================================
+\providecommand{\uvz}{\symbol{34}}
+
+\section{Syntaktická analýza}
+Syntaktický analyzátor (\id{parser.c}) je řízen \textit{rekurzivním sestupem}:
+každý neterminál gramatiky odpovídá jedné funkci \id{parse\_x}
+(\id{parse\_func}, \id{parse\_stmt}, \id{parse\_block}, atd.). Parser si
+drží aktuální token \id{cur} a funkcí \id{peek()} se umí podívat o~jeden
+token dopředu. Funkce \id{expect()} kontroluje podle pravidel v~dané funkci
+\id{parse\_x}, jestli tam daný token je, a posune se dál. Bloky se nerozlišují závorkami, ale tokeny \term{INDENT}
+a \term{DEDENT}, které vyrábí scanner podle odsazení.
+
+Výrazy parser nerozebírá sám, ale předá je precedenční analýze
+(funkce \id{parse\_expr}, podkapitola~\ref{sec:prec}). Výsledkem celé analýzy
+je abstraktní syntaktický strom (AST, \id{tree.c/h}), který dál prochází
+sémantická analýza a generátor kódu. Při chybě parser končí návratovým
+kódem~2.
+
+\subsection{LL gramatika}
+Gramatika v~tabulce~\ref{tab:grammar} přesně odpovídá funkcím parseru.
+Neterminál \nt{expr} se dál nerozvíjí, zpracuje ho precedenční analýza.
+Argumenty volání jsou podle zadání jen termy (\nt{term}), ne výrazy.
+Pravidla 14 a~55 povolují koncovou čárku. Pravidla s~\term{Boolean},
+\term{true}/\term{false}, \term{else if} (47) a \nt{istr} (62--67) patří
+k~rozšířením BOOLTHEN a INTERPOLATEDS.
+
+\begin{longtable}{r l c l}
+  \caption{LL(1) gramatika jazyka IFJ26 včetně rozšíření BOOLTHEN a INTERPOLATEDS}\label{tab:grammar}\\
+  \toprule
+  \# & \multicolumn{3}{l}{Pravidlo}\\
+  \midrule
+  \endfirsthead
+  \toprule
+  \# & \multicolumn{3}{l}{Pravidlo}\\
+  \midrule
+  \endhead
+  1  & \nt{prog}          & $\rightarrow$ & \nt{eols} \term{import} \term{id} \term{.} \term{*} \nt{eols} \nt{func\_list} \term{EOF} \\
+  2  & \nt{eols}          & $\rightarrow$ & \term{EOL} \nt{eols} \\
+  3  & \nt{eols}          & $\rightarrow$ & $\varepsilon$ \\
+  4  & \nt{func\_list}    & $\rightarrow$ & \nt{func} \nt{eols} \nt{func\_list} \\
+  5  & \nt{func\_list}    & $\rightarrow$ & $\varepsilon$ \\
+  6  & \nt{func}          & $\rightarrow$ & \nt{main\_opt} \term{def} \term{id} \term{(} \nt{params} \term{)} \nt{ret\_type} \term{=} \nt{body} \\
+  7  & \nt{main\_opt}     & $\rightarrow$ & \term{@main} \nt{eols} \\
+  8  & \nt{main\_opt}     & $\rightarrow$ & $\varepsilon$ \\
+  9  & \nt{params}        & $\rightarrow$ & \nt{param} \nt{params\_n} \\
+  10 & \nt{params}        & $\rightarrow$ & $\varepsilon$ \\
+  11 & \nt{params\_n}     & $\rightarrow$ & \term{,} \nt{params\_tail} \\
+  12 & \nt{params\_n}     & $\rightarrow$ & $\varepsilon$ \\
+  13 & \nt{params\_tail}  & $\rightarrow$ & \nt{param} \nt{params\_n} \\
+  14 & \nt{params\_tail}  & $\rightarrow$ & $\varepsilon$ \quad(koncová čárka) \\
+  15 & \nt{param}         & $\rightarrow$ & \term{id} \term{:} \nt{type} \\
+  16 & \nt{ret\_type}     & $\rightarrow$ & \term{:} \nt{type} \\
+  17 & \nt{ret\_type}     & $\rightarrow$ & $\varepsilon$ \\
+  18 & \nt{type}          & $\rightarrow$ & \term{Int} \\
+  19 & \nt{type}          & $\rightarrow$ & \term{Double} \\
+  20 & \nt{type}          & $\rightarrow$ & \term{String} \\
+  21 & \nt{type}          & $\rightarrow$ & \term{Unit} \\
+  22 & \nt{type}          & $\rightarrow$ & \term{Boolean} \\
+  23 & \nt{body}          & $\rightarrow$ & \term{EOL} \nt{block} \\
+  24 & \nt{body}          & $\rightarrow$ & \nt{expr\_or\_call} \\
+  25 & \nt{block}         & $\rightarrow$ & \term{INDENT} \nt{stmt\_list} \term{DEDENT} \\
+  26 & \nt{stmt\_list}    & $\rightarrow$ & \nt{simple\_stmt} \nt{stmt\_end} \\
+  27 & \nt{stmt\_list}    & $\rightarrow$ & \nt{compound\_stmt} \nt{stmt\_list\_n} \\
+  28 & \nt{stmt\_end}     & $\rightarrow$ & \term{EOL} \nt{stmt\_list\_n} \\
+  29 & \nt{stmt\_end}     & $\rightarrow$ & \term{;} \nt{stmt\_list} \\
+  30 & \nt{stmt\_list\_n} & $\rightarrow$ & \nt{stmt\_list} \\
+  31 & \nt{stmt\_list\_n} & $\rightarrow$ & $\varepsilon$ \\
+  32 & \nt{simple\_stmt}  & $\rightarrow$ & \term{val} \term{id} \nt{type\_opt} \term{=} \nt{expr\_or\_call} \\
+  33 & \nt{simple\_stmt}  & $\rightarrow$ & \term{var} \term{id} \nt{type\_opt} \term{=} \nt{expr\_or\_call} \\
+  34 & \nt{simple\_stmt}  & $\rightarrow$ & \term{return} \nt{ret\_val} \\
+  35 & \nt{simple\_stmt}  & $\rightarrow$ & \term{id} \term{=} \nt{expr\_or\_call} \\
+  36 & \nt{simple\_stmt}  & $\rightarrow$ & \nt{expr\_or\_call} \\
+  37 & \nt{type\_opt}     & $\rightarrow$ & \term{:} \nt{type} \\
+  38 & \nt{type\_opt}     & $\rightarrow$ & $\varepsilon$ \\
+  39 & \nt{ret\_val}      & $\rightarrow$ & \nt{expr\_or\_call} \\
+  40 & \nt{ret\_val}      & $\rightarrow$ & $\varepsilon$ \\
+  41 & \nt{compound\_stmt}& $\rightarrow$ & \nt{if\_stmt} \\
+  42 & \nt{compound\_stmt}& $\rightarrow$ & \term{while} \nt{expr} \term{do} \term{EOL} \nt{block} \\
+  43 & \nt{if\_stmt}      & $\rightarrow$ & \term{if} \nt{expr} \term{then} \term{EOL} \nt{block} \nt{else\_part} \\
+  44 & \nt{else\_part}    & $\rightarrow$ & \term{else} \nt{else\_rest} \\
+  45 & \nt{else\_part}    & $\rightarrow$ & $\varepsilon$ \\
+  46 & \nt{else\_rest}    & $\rightarrow$ & \term{EOL} \nt{block} \\
+  47 & \nt{else\_rest}    & $\rightarrow$ & \nt{if\_stmt} \\
+  48 & \nt{expr\_or\_call}& $\rightarrow$ & \term{id} \term{(} \nt{args} \term{)} \\
+  49 & \nt{expr\_or\_call}& $\rightarrow$ & \nt{expr} \\
+  50 & \nt{args}          & $\rightarrow$ & \nt{term} \nt{args\_n} \\
+  51 & \nt{args}          & $\rightarrow$ & $\varepsilon$ \\
+  52 & \nt{args\_n}       & $\rightarrow$ & \term{,} \nt{args\_tail} \\
+  53 & \nt{args\_n}       & $\rightarrow$ & $\varepsilon$ \\
+  54 & \nt{args\_tail}    & $\rightarrow$ & \nt{term} \nt{args\_n} \\
+  55 & \nt{args\_tail}    & $\rightarrow$ & $\varepsilon$ \quad(koncová čárka) \\
+  56 & \nt{term}          & $\rightarrow$ & \term{lit} \\
+  57 & \nt{term}          & $\rightarrow$ & \term{true} \\
+  58 & \nt{term}          & $\rightarrow$ & \term{false} \\
+  59 & \nt{term}          & $\rightarrow$ & \term{id} \\
+  60 & \nt{term}          & $\rightarrow$ & \term{(} \term{)} \\
+  61 & \nt{term}          & $\rightarrow$ & \nt{istr} \\
+  62 & \nt{istr}          & $\rightarrow$ & \term{s\uvz} \nt{istr\_parts} \term{\uvz} \\
+  63 & \nt{istr\_parts}   & $\rightarrow$ & \nt{istr\_part} \nt{istr\_parts} \\
+  64 & \nt{istr\_parts}   & $\rightarrow$ & $\varepsilon$ \\
+  65 & \nt{istr\_part}    & $\rightarrow$ & \term{lit} \quad(text řetězce) \\
+  66 & \nt{istr\_part}    & $\rightarrow$ & \term{id} \quad(\term{\$id}) \\
+  67 & \nt{istr\_part}    & $\rightarrow$ & \term{\$\{} \nt{expr} \term{\}} \\
+  \bottomrule
+\end{longtable}
+
+\subsection{LL tabulka}
+Podle tabulky parser vybírá pravidlo z~neterminálu (řádek) a aktuálního
+tokenu (sloupec). Sloupec \term{typ} zastupuje \term{Int}, \term{Double},
+\term{String}, \term{Unit} a~\term{Boolean}, sloupec \term{bool} literály
+\term{true} a~\term{false}.
+
+Jediné místo, kde jeden token nestačí, je \term{id} na začátku příkazu
+(buňky s~\textbf{*}): může jít o~přiřazení (\term{id =}), volání
+(\term{id (}) nebo výraz. Parser proto zavolá \id{peek()} a rozhodne
+se podle druhého tokenu.
+
+\begin{table}[H]
+  \centering
+  \caption{LL tabulka (v~buňkách čísla pravidel z~tabulky~\ref{tab:grammar})}
+  \label{tab:ll}
+  \scriptsize
+  \setlength{\tabcolsep}{2.5pt}
+  \newcommand{\rh}[1]{\rotatebox{90}{#1}} % svisle zahlavi sloupcu
+  \begin{adjustbox}{max width=\linewidth, max totalheight=0.8\textheight}
+  \begin{tabular}{|l|*{27}{c|}}
+    \hline
+    & \rh{\term{EOL}} & \rh{\term{EOF}} & \rh{\term{import}} & \rh{\term{def}} & \rh{\term{@main}} & \rh{\term{id}} & \rh{\term{(}} & \rh{\term{)}} & \rh{\term{,}} & \rh{\term{:}} & \rh{\term{=}} & \rh{\term{;}} & \rh{\term{INDENT}} & \rh{\term{DEDENT}} & \rh{\term{val}} & \rh{\term{var}} & \rh{\term{return}} & \rh{\term{if}} & \rh{\term{else}} & \rh{\term{while}} & \rh{\term{typ}} & \rh{\term{lit}} & \rh{\term{bool}} & \rh{\term{-}} & \rh{\term{!}} & \rh{\term{s\uvz}} & \rh{\term{\$\{}} \\ \hline
+    \nt{prog}           & 1  &    & 1  &    &    &      &    &    &    &    &    &    &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{eols}           & 2  & 3  & 3  & 3  & 3  &      &    &    &    &    &    &    &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{func\_list}     &    & 5  &    & 4  & 4  &      &    &    &    &    &    &    &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{func}           &    &    &    & 6  & 6  &      &    &    &    &    &    &    &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{main\_opt}      &    &    &    & 8  & 7  &      &    &    &    &    &    &    &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{params}         &    &    &    &    &    & 9    &    & 10 &    &    &    &    &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{params\_n}      &    &    &    &    &    &      &    & 12 & 11 &    &    &    &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{params\_tail}   &    &    &    &    &    & 13   &    & 14 &    &    &    &    &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{param}          &    &    &    &    &    & 15   &    &    &    &    &    &    &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{ret\_type}      &    &    &    &    &    &      &    &    &    & 16 & 17 &    &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{type}           &    &    &    &    &    &      &    &    &    &    &    &    &    &    &    &    &    &    &    &    & 18--22&    &       &    &    &    &    \\ \hline
+    \nt{body}           & 23 &    &    &    &    & 24   & 24 &    &    &    &    &    &    &    &    &    &    &    &    &    &       & 24 & 24    & 24 & 24 & 24 &    \\ \hline
+    \nt{block}          &    &    &    &    &    &      &    &    &    &    &    &    & 25 &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{stmt\_list}     &    &    &    &    &    & 26   & 26 &    &    &    &    &    &    &    & 26 & 26 & 26 & 27 &    & 27 &       & 26 & 26    & 26 & 26 & 26 &    \\ \hline
+    \nt{stmt\_end}      & 28 &    &    &    &    &      &    &    &    &    &    & 29 &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{stmt\_list\_n}  &    &    &    &    &    & 30   & 30 &    &    &    &    &    &    & 31 & 30 & 30 & 30 & 30 &    & 30 &       & 30 & 30    & 30 & 30 & 30 &    \\ \hline
+    \nt{simple\_stmt}   &    &    &    &    &    & 35/36* & 36 &  &    &    &    &    &    &    & 32 & 33 & 34 &    &    &    &       & 36 & 36    & 36 & 36 & 36 &    \\ \hline
+    \nt{type\_opt}      &    &    &    &    &    &      &    &    &    & 37 & 38 &    &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{ret\_val}       & 40 &    &    &    &    & 39   & 39 &    &    &    &    & 40 &    &    &    &    &    &    &    &    &       & 39 & 39    & 39 & 39 & 39 &    \\ \hline
+    \nt{compound\_stmt} &    &    &    &    &    &      &    &    &    &    &    &    &    &    &    &    &    & 41 &    & 42 &       &    &       &    &    &    &    \\ \hline
+    \nt{if\_stmt}       &    &    &    &    &    &      &    &    &    &    &    &    &    &    &    &    &    & 43 &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{else\_part}     &    &    &    &    &    & 45   & 45 &    &    &    &    &    &    & 45 & 45 & 45 & 45 & 45 & 44 & 45 &       & 45 & 45    & 45 & 45 & 45 &    \\ \hline
+    \nt{else\_rest}     & 46 &    &    &    &    &      &    &    &    &    &    &    &    &    &    &    &    & 47 &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{expr\_or\_call} &    &    &    &    &    & 48/49* & 49 &  &    &    &    &    &    &    &    &    &    &    &    &    &       & 49 & 49    & 49 & 49 & 49 &    \\ \hline
+    \nt{args}           &    &    &    &    &    & 50   & 50 & 51 &    &    &    &    &    &    &    &    &    &    &    &    &       & 50 & 50    &    &    & 50 &    \\ \hline
+    \nt{args\_n}        &    &    &    &    &    &      &    & 53 & 52 &    &    &    &    &    &    &    &    &    &    &    &       &    &       &    &    &    &    \\ \hline
+    \nt{args\_tail}     &    &    &    &    &    & 54   & 54 & 55 &    &    &    &    &    &    &    &    &    &    &    &    &       & 54 & 54    &    &    & 54 &    \\ \hline
+    \nt{term}           &    &    &    &    &    & 59   & 60 &    &    &    &    &    &    &    &    &    &    &    &    &    &       & 56 & 57/58 &    &    & 61 &    \\ \hline
+    \nt{istr}           &    &    &    &    &    &      &    &    &    &    &    &    &    &    &    &    &    &    &    &    &       &    &       &    &    & 62 &    \\ \hline
+    \nt{istr\_parts}    &    &    &    &    &    & 63   &    &    &    &    &    &    &    &    &    &    &    &    &    &    &       & 63 &       &    &    &    & 63 \\ \hline
+    \nt{istr\_part}     &    &    &    &    &    & 66   &    &    &    &    &    &    &    &    &    &    &    &    &    &    &       & 65 &       &    &    &    & 67 \\ \hline
+  \end{tabular}
+  \end{adjustbox}
+
+  \vspace{0.3cm}
+  \small Pravidlo 64 (\nt{istr\_parts} $\rightarrow \varepsilon$) se použije
+  na koncovou uvozovku interpolovaného řetězce (token \term{ISTR\_END}),
+  která kvůli šířce není v~tabulce jako samostatný sloupec.
+\end{table}
+
+\subsection{Precedenční syntaktická analýza výrazů}\label{sec:prec}
+Výrazy zpracovává funkce \id{parse\_expr} pomocí zásobníku a precedenční
+tabulky (tabulka~\ref{tab:prec}). Na dně zásobníku je \term{\$}, za ním se
+ukládají terminály, neterminály \texttt{E} a značky \texttt{<}. Podle
+nejvyššího terminálu na zásobníku a vstupního tokenu tabulka určí akci:
+\begin{itemize}
+  \item \texttt{<} -- za nejvyšší terminál vloží značku a token přesune na zásobník,
+  \item \texttt{=} -- token jen přesune (pouze dvojice \term{(} \term{)}),
+  \item \texttt{>} -- redukce: vše nad poslední značkou se nahradí jedním \texttt{E},
+  \item prázdné políčko -- syntaktická chyba.
+\end{itemize}
+Redukce odpovídají pravidlům \texttt{E $\rightarrow$ i}, \texttt{E $\rightarrow$ (E)},
+\texttt{E $\rightarrow$ -E}, \texttt{E $\rightarrow$ !E} a
+\texttt{E $\rightarrow$ E op E}. Každá redukce rovnou vytvoří uzel AST
+(\id{make\_binop}, \id{make\_unop}). Analýza končí, když je na vstupu token,
+který do výrazu nepatří (\term{then}, \term{do}, \term{EOL}, atd.), a na
+zásobníku zbyde jen \term{\$}\,\texttt{E}.
+
+Unární a binární minus rozlišuje parser podle předchozího symbolu: když před
+\term{-} stojí operand nebo \term{)}, jde o~binární operátor. Dvojice
+\term{()} je hodnota typu \term{Unit}, tedy term \term{i}. Interpolovaný
+řetězec je také jeden term, jeho vnitřní \term{\$\{\dots\}} se zpracuje
+rekurzivním voláním \id{parse\_expr}. Relační operátory a \term{== !=}
+nejsou asociativní, proto \texttt{a < b < c} skončí chybou.
+
+\begin{table}[H]
+  \centering
+  \caption{Precedenční tabulka pro výrazy (včetně rozšíření BOOLTHEN);
+           řádek = nejvyšší terminál na zásobníku, sloupec = vstupní token}
+  \label{tab:prec}
+  \begin{tabular}{|c|*{11}{c|}}
+    \hline
+               & \term{- !} & \term{* /} & \term{+ -} & \term{rel} & \term{== !=} & \term{\&\&} & \term{||} & \term{(} & \term{)} & \term{i} & \term{\$} \\ \hline
+    \term{- !}   & $<$ & $>$ & $>$ & $>$ & $>$ & $>$ & $>$ & $<$ & $>$ & $<$ & $>$ \\ \hline
+    \term{* /}   & $<$ & $>$ & $>$ & $>$ & $>$ & $>$ & $>$ & $<$ & $>$ & $<$ & $>$ \\ \hline
+    \term{+ -}   & $<$ & $<$ & $>$ & $>$ & $>$ & $>$ & $>$ & $<$ & $>$ & $<$ & $>$ \\ \hline
+    \term{rel}   & $<$ & $<$ & $<$ &     & $>$ & $>$ & $>$ & $<$ & $>$ & $<$ & $>$ \\ \hline
+    \term{== !=} & $<$ & $<$ & $<$ & $<$ &     & $>$ & $>$ & $<$ & $>$ & $<$ & $>$ \\ \hline
+    \term{\&\&}  & $<$ & $<$ & $<$ & $<$ & $<$ & $>$ & $>$ & $<$ & $>$ & $<$ & $>$ \\ \hline
+    \term{||}    & $<$ & $<$ & $<$ & $<$ & $<$ & $<$ & $>$ & $<$ & $>$ & $<$ & $>$ \\ \hline
+    \term{(}     & $<$ & $<$ & $<$ & $<$ & $<$ & $<$ & $<$ & $<$ & $=$ & $<$ &     \\ \hline
+    \term{)}     &     & $>$ & $>$ & $>$ & $>$ & $>$ & $>$ &     & $>$ &     & $>$ \\ \hline
+    \term{i}     &     & $>$ & $>$ & $>$ & $>$ & $>$ & $>$ &     & $>$ &     & $>$ \\ \hline
+    \term{\$}    & $<$ & $<$ & $<$ & $<$ & $<$ & $<$ & $<$ & $<$ &     & $<$ &     \\ \hline
+  \end{tabular}
+
+  \vspace{0.2cm}
+  \small \term{- !} jsou unární operátory, \term{+ -} binární, \term{rel} jsou \term{<}, \term{<=}, \term{>}, \term{>=}
+\end{table}
