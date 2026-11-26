@@ -1,3 +1,11 @@
+/*
+* Implementace překladače imperativního jazyka IFJ26
+*
+* token.h - Konecny automat, definovani typu tokenu
+* Autor: xnemecm00 (Matyas Nemecek)
+*/
+
+
 #ifndef TOKEN_H
 #define TOKEN_H
 
