@@ -73,6 +73,13 @@ static symtable_t *global_st = NULL;
 static Node *current_prog = NULL;
 static func_status_t *func_states = NULL;
 
+/* graf volani mezi uzivatelskymi funkcemi: call_graph[a * pocet + b] je true,
+ * kdyz telo funkce a obsahuje volani funkce b (vestavene funkce se nezapisuji)
+ * slouzi ke kontrole, ze funkce bez navratoveho typu nevola sama sebe ani
+ * neprimo pres jine funkce (i kdyz ty typ maji) -> chyba 6 */
+static bool *call_graph = NULL;
+static int current_func = -1; // index prave kontrolovane funkce
+
 int find_func_idx(char *name) {
   if (global_st == NULL) {
     return -INTERNAL_ERROR;
@@ -435,7 +442,10 @@ int ensure_checked(int idx) {
     return 6;
   }
   func_states[idx] = FUNC_CHECKING;
+  int prevFunc = current_func;
+  current_func = idx;
   int err = check_func(current_prog->as.program.funcs[idx]);
+  current_func = prevFunc;
   if (err != 0) {
     return err;
   }
@@ -584,33 +594,103 @@ int check_func(Node *n) {
   symtable_free(local_st);
   return err;
 }
-int check_program(Node *n, symtable_t *st) {
-  int err;
-  if (n->as.program.count > 0) {
-    func_states = calloc((size_t)n->as.program.count, sizeof(func_status_t));
-    if (func_states == NULL) {
+/* zjisti, jestli se z funkce start da po hranach grafu volani dostat zpet
+ * do start (prima i neprima rekurze), DFS s vlastnim zasobnikem
+ * vraci 1 = ano, 0 = ne, -1 = chyba alokace */
+static int reaches_itself(int start, int count) {
+  bool *visited = calloc((size_t)count, sizeof(bool));
+  int *stack = malloc((size_t)count * sizeof(int));
+  if (visited == NULL || stack == NULL) {
+    free(visited);
+    free(stack);
+    return -1;
+  }
+  int top = 0;
+  int found = 0;
+  // zacina se nasledniky start, ne start samotnym
+  for (int j = 0; j < count; j++) {
+    if (call_graph[start * count + j] && !visited[j]) {
+      visited[j] = true;
+      stack[top++] = j;
+    }
+  }
+  while (top > 0 && !found) {
+    int v = stack[--top];
+    if (v == start) {
+      found = 1;
+      break;
+    }
+    for (int j = 0; j < count; j++) {
+      if (call_graph[v * count + j] && !visited[j]) {
+        visited[j] = true;
+        stack[top++] = j;
+      }
+    }
+  }
+  free(visited);
+  free(stack);
+  return found;
+}
+
+/* funkce bez uvedeneho navratoveho typu nesmi volat sama sebe ani neprimo
+ * pres jine funkce, bez ohledu na to, jestli ty jine funkce typ maji */
+static int check_recursion(Node *prog) {
+  int count = prog->as.program.count;
+  for (int i = 0; i < count; i++) {
+    Node *f = prog->as.program.funcs[i];
+    symbol_t *sym = symtable_find_func(global_st, f->as.func.name);
+    if (sym == NULL) {
       return INTERNAL_ERROR;
     }
+    if (sym->func.ret_explicit) {
+      continue; // s uvedenym typem je rekurze povolena
+    }
+    int r = reaches_itself(i, count);
+    if (r < 0) {
+      return INTERNAL_ERROR;
+    }
+    if (r == 1) {
+      fprintf(stderr, "Chyba (radek %d): Rekurzivni volani funkce '%s' bez navratoveho typu\n",
+              f->line, f->as.func.name);
+      return 6;
+    }
   }
-  for (int i = 0; i < n->as.program.count; i++) {
+  return 0;
+}
+
+int check_program(Node *n, symtable_t *st) {
+  int err = 0;
+  int count = n->as.program.count;
+  if (count > 0) {
+    func_states = calloc((size_t)count, sizeof(func_status_t));
+    call_graph = calloc((size_t)count * (size_t)count, sizeof(bool));
+    if (func_states == NULL || call_graph == NULL) {
+      err = INTERNAL_ERROR;
+      goto cleanup;
+    }
+  }
+  for (int i = 0; i < count; i++) {
     err = add_func(n->as.program.funcs[i], st);
     if (err != 0) {
-      free(func_states);
-      func_states = NULL;
-      return err;
+      goto cleanup;
     }
   }
-  for (int i = 0; i < n->as.program.count; i++) {
+  for (int i = 0; i < count; i++) {
     err = ensure_checked(i);
     if (err != 0) {
-      free(func_states);
-      func_states = NULL;
-      return err;
+      goto cleanup;
     }
   }
+  // az ted je graf volani kompletni (vsechna tela jsou zkontrolovana)
+  err = check_recursion(n);
+
+cleanup:
   free(func_states);
   func_states = NULL;
-  return 0;
+  free(call_graph);
+  call_graph = NULL;
+  current_func = -1;
+  return err;
 }
 
 int check_return(Node *n, symtable_t *st) {
@@ -674,13 +754,15 @@ int check_call(Node *n, symtable_t *st) {
       return 5;
     }
   }
-  if (symbol->func.ret_type == TYPE_UNKNOWN) {
-    int idx = find_func_idx(n->as.call.name);
-    if (idx >= 0) {
-      err = ensure_checked(idx);
-      if (err != 0) {
-        return err;
-      }
+  int idx = find_func_idx(n->as.call.name);
+  // zapsat hranu do grafu volani (jen uzivatelske funkce)
+  if (idx >= 0 && current_func >= 0 && call_graph != NULL) {
+    call_graph[current_func * current_prog->as.program.count + idx] = true;
+  }
+  if (symbol->func.ret_type == TYPE_UNKNOWN && idx >= 0) {
+    err = ensure_checked(idx);
+    if (err != 0) {
+      return err;
     }
   }
   set_type(n, symbol->func.ret_type);
@@ -711,6 +793,24 @@ int check_unop(Node *n, symtable_t *st) {
   }
   fprintf(stderr, "Chyba (radek %d): Neznamy unarni operator\n", n->line);
   return 6;
+}
+
+/* interpolovany retezec s"text $id ${vyraz}" (rozsireni INTERPOLATEDS)
+ * zkontroluje kazdou cast (promenne musi existovat, volani funkci se
+ * zkontroluji vcetne rekurze), vysledek je vzdy String */
+int check_istr(Node *n, symtable_t *st) {
+  for (int i = 0; i < n->as.istr.count; i++) {
+    int err = check_node(n->as.istr.parts[i], st);
+    if (err != 0) {
+      return err;
+    }
+    if (get_type(n->as.istr.parts[i]) == TYPE_UNKNOWN) {
+      fprintf(stderr, "Chyba (radek %d): Neznamy typ v interpolovanem retezci\n", n->line);
+      return 6;
+    }
+  }
+  set_type(n, TYPE_STRING);
+  return 0;
 }
 
 int check_node(Node *n, symtable_t *st) {
@@ -755,8 +855,12 @@ int check_node(Node *n, symtable_t *st) {
     case N_BOOL:
       set_type(n, TYPE_BOOLEAN);
       return 0;
+    case N_ISTR:
+      return check_istr(n, st);
     default:
-      return 0;
+      // neznamy druh uzlu nesmi projit potichu, jinak se jeho obsah nezkontroluje
+      fprintf(stderr, "Chyba (radek %d): Neznamy uzel AST %d\n", n->line, n->kind);
+      return INTERNAL_ERROR;
   }
 }
 /* projde vsechny funkce a podiva se zda existuje main
