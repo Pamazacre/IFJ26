@@ -68,6 +68,7 @@ typedef struct { // obyc dynam. pole
   int cap;
 } PrecStack;
 
+// prida polozku na vrchol prec. zasobniku, pri zaplneni zdvojnasobi kapacitu (exit 99 kdyz dojde pamet)
 static void ps_push(PrecStack *s, PrecItem it) {
   if (s->top == s->cap) { // pole je full -> potreba zvetsit
     if (s->cap == 0)
@@ -90,6 +91,7 @@ static int ps_top_term(PrecStack *s) {
   return -1; // na dne je vzdy $, takze SNAD nenastane
 }
 
+// nacte dalsi token ze scanneru, pri chybe skonci: 1 lex, 2 spatny dedent, 99 interni
 static void read_token(Token *t) {
   int rc = get_token(t);
   if (rc == 1)
@@ -100,11 +102,13 @@ static void read_token(Token *t) {
     exit(99); // interni chyba
 }
 
+// posune cur na dalsi token 
 static void next(void) {
-  if (has_la) {
+  if (has_la) { // (vezme ho z la, pokud uz byl nacteny pres peek)
     cur = la;
     has_la = 0;
-  } else
+  }
+  else
     read_token(&cur);
 }
 
@@ -222,6 +226,7 @@ static void skip_eols(void) {
     next();
 }
 
+
 static Node *parse_expr(void);
 static Node *parse_block(void);
 
@@ -303,6 +308,7 @@ static Node *parse_var(void) {
   return n;
 }
 
+// precedencni analyza vyrazu nad zasobnikem podle prec_table, vraci koren podstromu vyrazu
 static Node *parse_expr(void) {
   PrecStack s = {0}; // prazdny zasobnik (items=NULL, top=0, cap=0)
   ps_push(&s, (PrecItem){P_END, 0, NULL, cur.line}); // $ na dno
@@ -323,7 +329,8 @@ static Node *parse_expr(void) {
         s.items[i] = s.items[i - 1]; // posunout E (pokud tam je) o 1 nahoru
       s.items[t + 1] = (PrecItem){P_MARK, 0, NULL, 0};
     }
-    // a pak normalne shift
+      // fall through - po vlozeni znacky normalne shift (proto tam neni break, 
+      // ale myslim ze to bude hlasit warning)
     case Q: { // '=' : shift bez znacky
       PrecItem it = {a, cur.type, NULL, cur.line};
       if (a == P_TERM)
@@ -332,13 +339,13 @@ static Node *parse_expr(void) {
         next();
       ps_push(&s, it);
       prev_operand = (a == P_TERM || a == P_RPAR);
-      break;
     }
     case R: // '>' : redukce
       reduce(&s);
       break;
     default: // X : chyba
       error();
+      break;
     }
   }
 
@@ -379,6 +386,7 @@ static Node *parse_istr(void) {
   return s;
 }
 
+// volani funkce: id ( args ), argumenty jsou jen termy, koncova carka jen pred koncem radku
 static Node *parse_call(void) {
   Node *c = make_call(cur.stringValue, cur.line);
   next();
@@ -400,12 +408,14 @@ static Node *parse_call(void) {
   return c;
 }
 
+// rozhodne podle id + '(' (peek), jestli jde o volani nebo vyraz
 static Node *parse_expr_or_call(void) {
   if (cur.type == TOKEN_ID && peek().type == TOKEN_LPAR)
     return parse_call();
   return parse_expr();
 }
 
+// jeden prikaz: val/var, return, if, while, prirazeni nebo vyraz/volani
 static Node *parse_stmt(void) {
   int line = cur.line;
   switch (cur.type) {
@@ -472,6 +482,7 @@ static Node *parse_stmt(void) {
   }
 }
 
+// blok prikazu mezi INDENT a DEDENT, prikazy oddelene EOL nebo ';'
 static Node *parse_block(void) {
   Node *blk = new_node(N_BLOCK, cur.line);
   expect(TOKEN_INDENT);
@@ -491,6 +502,7 @@ static Node *parse_block(void) {
   }
 }
 
+/// telo funkce: bud blok na dalsim radku, nebo jeden vyraz/volani na stejnem radku
 static Node *parse_body(void) {
   if (cur.type == TOKEN_EOL) {
     next();

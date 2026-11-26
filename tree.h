@@ -1,9 +1,9 @@
 /*
-* Implementace překladače imperativního jazyka IFJ26
-*
-* tree.h --
-* Autor: xsenkyp00 (Pavel Šenkýř)
-*/
+ * Implementace překladače imperativního jazyka IFJ26
+ *
+ * tree.h --definice uzlu AST a constructors uzlu
+ * Autor: xsenkyp00 (Pavel Šenkýř)
+ */
 
 #ifndef TREE_H
 #define TREE_H
@@ -119,12 +119,17 @@ struct Node {
   } as;
 };
 
+// alokuje novy prazdny uzel daneho druhu (calloc)
 Node *new_node(NodeKind k, int line);
+
+// pridani potomku do seznamu: prikaz do bloku, funkce do programu,
+// parametr do funkce, argument do volani
 void block_add(Node *blk, Node *stmt);
 void program_add(Node *prog, Node *func);
 void func_add_param(Node *f, char *name, DataType type);
 void call_add_arg(Node *c, Node *arg);
 
+// konstruktory uzlu AST, kazdy vytvori uzel a vyplni jeho data
 Node *make_binop(Node *left, Node *right, TokenType op, int line);
 Node *make_unop(TokenType op, Node *operand, int line);
 Node *make_num(long long value, int line);
@@ -133,8 +138,7 @@ Node *make_string(char *value, int line);
 Node *make_unit(int line);
 Node *make_var(char *name, int line);
 Node *make_assign(char *name, Node *value, int line);
-Node *make_vardef(char *name, int is_mutable, DataType declared, Node *init,
-                  int line);
+Node *make_vardef(char *name, int is_mutable, DataType declared, Node *init, int line);
 Node *make_call(char *name, int line);
 Node *make_return(Node *value, int line);
 Node *make_if(Node *cond, Node *then_b, Node *else_b, int line);
@@ -143,6 +147,8 @@ Node *make_program(int line);
 Node *make_func(char *name, int is_main, int line);
 Node *make_bool(int value, int line);
 Node *make_istr(int line);
+
+// prida cast (retezec nebo vyraz) do interpolovaneho retezce
 void istr_add(Node *s, Node *part);
 
 void print_node(Node *n, int depth);
