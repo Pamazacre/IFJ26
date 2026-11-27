@@ -1,4 +1,9 @@
-// xsmrckt00
+/*
+ * Implementace překladače imperativního jazyka IFJ26
+ *
+ * analyzer.c -- semanticka analyza
+ * Autor: xsmrckt00 (Tomáš Smrčka)
+ */
 
 #include <stdbool.h>
 #include <stdint.h>

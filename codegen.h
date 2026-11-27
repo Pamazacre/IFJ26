@@ -2,7 +2,7 @@
  * Implementace překladače imperativního jazyka IFJ26
  *
  * codegen.h -- generator cieloveho kodu IFJcode26 z AST
- * Autor: xbeniaj00
+ * Autor: xbeniaj00 (Benjamin Joes Benian)
  *
  *  - vstup je AST z parsera (tree.h), skontrolovany analyzerom (az bude
  *    zapojeny)

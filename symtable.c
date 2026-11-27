@@ -2,7 +2,7 @@
  * Implementace překladače imperativního jazyka IFJ26
  *
  * symtable.c -- TRP-izp: hash table s otvorenym adresovanim
- * xbeniaj00
+ * Autor: xbeniaj00 (Benjamin Joes Benian)
  */
 
 #include "symtable.h"

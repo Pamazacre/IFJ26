@@ -2,7 +2,7 @@
  * Implementace překladače imperativního jazyka IFJ26
  *
  * codegen.c -- generator IFJcode26 (zasobnikovy, vyrazy cez PUSHS/..S)
- * xbeniaj00
+ * Autor: xbeniaj00 (Benjamin Joes Benian)
  * generovanie vysledneho IFJcode26 kodu na zaklade AST.
  * 
  */

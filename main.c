@@ -1,3 +1,11 @@
+/*
+ * Implementace překladače imperativního jazyka IFJ26
+ *
+ * main.c -- vstupni bod, spoji parser, analyzu a generovani kodu
+ * Autor: xsenkyp00 (Pavel Šenkýř), xsmrckt00 (Tomáš Smrčka),
+ *        xbeniaj00 (Benjamin Joes Benian)
+ */
+
 #include <stdio.h>
 #include "parser.h"
 #include "analyzer.h"
@@ -11,5 +19,4 @@ int main(void){
   if (err != 0)
     return err;
   return codegen(prog, stdout);
-  return 0;
 }

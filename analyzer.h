@@ -1,4 +1,9 @@
-// xsmrckt00
+/*
+ * Implementace překladače imperativního jazyka IFJ26
+ *
+ * analyzer.h -- rozhrani semanticke analyzy
+ * Autor: xsmrckt00 (Tomáš Smrčka)
+ */
 
 #ifndef IFJ26_ANALYZER_H
 #define IFJ26_ANALYZER_H
