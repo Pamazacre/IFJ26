@@ -340,6 +340,7 @@ bool symtable_insert_builtins(symtable_t *st) {
       {"subStr", 3, TYPE_STRING, {TYPE_STRING, TYPE_INT, TYPE_INT}},
       {"ord", 2, TYPE_INT, {TYPE_STRING, TYPE_INT}},
       {"chr", 1, TYPE_STRING, {TYPE_INT}},
+      {"readBoolean", 0, TYPE_BOOLEAN, {TYPE_UNKNOWN}},
   };
 
   for (size_t i = 0; i < sizeof builtins / sizeof builtins[0]; i++) {
