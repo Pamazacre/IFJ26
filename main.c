@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "parser.h"
 #include "analyzer.h"
+#include "codegen.h"
 
 #include <stdlib.h>
 
@@ -9,6 +10,6 @@ int main(void){
   int err = analyze(prog);
   if (err != 0)
     return err;
-   // TODO: codegen(prog, stdout) az budou v repu
+  return codegen(prog, stdout);
   return 0;
 }
