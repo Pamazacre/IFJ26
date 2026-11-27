@@ -1,10 +1,9 @@
 /*
-* Implementace překladače imperativního jazyka IFJ26
-*
-* token.h - Konecny automat, definovani typu tokenu
-* Autor: xnemecm00 (Matyas Nemecek)
-*/
-
+ * Implementace překladače imperativního jazyka IFJ26
+ *
+ * token.h - Konecny automat, definovani typu tokenu
+ * Autor: xnemecm00 (Matyas Nemecek)
+ */
 
 #ifndef TOKEN_H
 #define TOKEN_H
@@ -76,11 +75,11 @@ typedef enum {
 
   // pravdivostní hodnoty - rozsireni pro boolean
   TOKEN_TYPE_BOOLEAN,
-  TOKEN_TRUE,    // Klíčová hodnota bool - true
-  TOKEN_FALSE,   // Klíčová hodnota bool - false
-  TOKEN_NOT,     // Klíčová hodnota bool - NOT
-  TOKEN_AND,     // Klíčová hodnota bool - AND
-  TOKEN_OR,      // Klíčová hodnota bool - OR
+  TOKEN_TRUE,  // Klíčová hodnota bool - true
+  TOKEN_FALSE, // Klíčová hodnota bool - false
+  TOKEN_NOT,   // Klíčová hodnota bool - NOT
+  TOKEN_AND,   // Klíčová hodnota bool - AND
+  TOKEN_OR,    // Klíčová hodnota bool - OR
 
 } TokenType;
 

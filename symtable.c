@@ -284,7 +284,6 @@ st_status_t symtable_insert_func(symtable_t *st, const char *name,
   return ST_OK;
 }
 
-
 st_status_t symtable_declare_func(symtable_t *st, const char *name,
                                   symbol_t **out) {
   if (out != NULL)

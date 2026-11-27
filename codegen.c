@@ -4,7 +4,7 @@
  * codegen.c -- generator IFJcode26 (zasobnikovy, vyrazy cez PUSHS/..S)
  * Autor: xbeniaj00 (Benjamin Joes Benian)
  * generovanie vysledneho IFJcode26 kodu na zaklade AST.
- * 
+ *
  */
 
 #include "codegen.h"
@@ -186,7 +186,9 @@ static data_type_t stmt_type(Node *s) {
   case N_VARDEF:
   case N_ASSIGN:
   case N_WHILE:
-  case N_IF: /* bez CONTROL if nie je vyraz, vetvy su Unit */ // TODO Remove CONTROL if vyrazy
+  case N_IF: /* bez CONTROL if nie je vyraz, vetvy su Unit */ // TODO Remove
+                                                              // CONTROL if
+                                                              // vyrazy
     return TYPE_UNIT;
   case N_RETURN:
     return s->as.ret.value ? expr_type(s->as.ret.value) : TYPE_UNIT;
@@ -300,7 +302,7 @@ static void gen_logic(Node *n) {
   gen_expr(n->as.binop.l);
   EMIT("PUSHS %s", stop);
   EMIT("JUMPIFEQS !short%u", l);
-  gen_expr(n->as.binop.r);         /* inak rozhodne pravy operand */
+  gen_expr(n->as.binop.r); /* inak rozhodne pravy operand */
   EMIT("JUMP !logic%u", l);
   EMIT("LABEL !short%u", l);
   EMIT("PUSHS %s", stop);
@@ -318,8 +320,8 @@ static void gen_binop(Node *n) {
   data_type_t rt = expr_type(r);
   /* zmiesane int a double -> obe na double, operandy sa hned konvertuju aby
    * sa nemuselo hrabat pod vrchol zasobnika */
-  data_type_t num = (lt == TYPE_DOUBLE || rt == TYPE_DOUBLE) ? TYPE_DOUBLE
-                                                             : TYPE_UNKNOWN;
+  data_type_t num =
+      (lt == TYPE_DOUBLE || rt == TYPE_DOUBLE) ? TYPE_DOUBLE : TYPE_UNKNOWN;
   gen_expr_to(l, num);
   gen_expr_to(r, num);
 
@@ -482,9 +484,8 @@ static void gen_call(Node *n) {
   }
   /* argumenty zlava doprava, Int do Double parametra sa rozsiri */
   for (int i = 0; i < n->as.call.nargs; i++) {
-    data_type_t pt = (size_t)i < f->func.param_count
-                         ? f->func.param_types[i]
-                         : TYPE_UNKNOWN;
+    data_type_t pt =
+        (size_t)i < f->func.param_count ? f->func.param_types[i] : TYPE_UNKNOWN;
     gen_expr_to(n->as.call.args[i], pt);
   }
   EMIT("CALL $%s", n->as.call.name);
@@ -590,7 +591,8 @@ static void gen_stmt(Node *s, bool want_value) {
     gen_block(s->as.if_.then_b, false);
     EMIT("JUMP !endif%u", l);
     EMIT("LABEL !else%u", l);
-    if (s->as.if_.else_b != NULL) /* bez else / else if = blok s if (BOOLTHEN) */
+    if (s->as.if_.else_b !=
+        NULL) /* bez else / else if = blok s if (BOOLTHEN) */
       gen_block(s->as.if_.else_b, false);
     EMIT("LABEL !endif%u", l);
     break;
@@ -612,7 +614,7 @@ static void gen_stmt(Node *s, bool want_value) {
     }
     EMIT("JUMP $%s$ret", g.fn_name);
     return; /* dalej sa nejde, zasobnik je ok */
-  default: /* samostatny vyraz alebo volanie */
+  default:  /* samostatny vyraz alebo volanie */
     gen_expr(s);
     if (want_value) {
       ret_convert(expr_type(s));
@@ -739,8 +741,8 @@ static void collect_funcs(void) {
         fail(99);
   }
   for (int i = 0; i < n && g.err == 0; i++) {
-    symbol_t *sym = symtable_find_func(g.st, g.prog->as.program.funcs[i]
-                                                 ->as.func.name);
+    symbol_t *sym =
+        symtable_find_func(g.st, g.prog->as.program.funcs[i]->as.func.name);
     if (sym->func.ret_type == TYPE_UNKNOWN)
       infer_ret(sym);
   }

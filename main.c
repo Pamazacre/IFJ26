@@ -6,14 +6,14 @@
  *        xbeniaj00 (Benjamin Joes Benian)
  */
 
-#include <stdio.h>
-#include "parser.h"
 #include "analyzer.h"
 #include "codegen.h"
+#include "parser.h"
+#include <stdio.h>
 
 #include <stdlib.h>
 
-int main(void){
+int main(void) {
   Node *prog = parse_program(); // pri chybe skonci exit(1/2/99)
   int err = analyze(prog);
   if (err != 0)

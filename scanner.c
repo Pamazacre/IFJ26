@@ -1,9 +1,9 @@
 /*
-* Implementace překladače imperativního jazyka IFJ26
-*
-* scanner.c - Konecny automat
-* Autor: xnemecm00 (Matyas Nemecek)
-*/
+ * Implementace překladače imperativního jazyka IFJ26
+ *
+ * scanner.c - Konecny automat
+ * Autor: xnemecm00 (Matyas Nemecek)
+ */
 
 #include "token.h"
 #include <ctype.h>
@@ -45,8 +45,8 @@ typedef enum { // podobně jako v token.h - jedná se o jakousi kolekci VŠECH
                //-> místo tedy několik vnořených funkcí bude potom jen jeden
                // velký switch, kde v podstatě jednotlivé stavy budou definovány
 
-  S_START, /*Začátek každého slova - rozřazení do jednoho z pěti základních
-              "stromů"*/
+  S_START,      /*Začátek každého slova - rozřazení do jednoho z pěti základních
+                   "stromů"*/
   S_INT0,       /*Číslo začínající 0 -> může to být double / chbya*/
   S_INT0_D,     /* 0 a dalsi cislice -> musi to byt double (00.5)*/
   S_INT0_U,     /* podtrzitko za cislici s nulou na zacatku*/

@@ -505,13 +505,11 @@ static Node *parse_block(void) {
     block_add(blk, s);
     if (s->kind == N_IF || s->kind == N_WHILE) {
       // vnoreny blok uz snedl EOL i DEDENT, oddelovac tu neni
-    }
-    else if (cur.type == TOKEN_SEMICOLON){
+    } else if (cur.type == TOKEN_SEMICOLON) {
       next();
       if (cur.type == TOKEN_EOL) // ; na konci radku
         next();
-    }
-    else if (cur.type == TOKEN_EOL)
+    } else if (cur.type == TOKEN_EOL)
       next();
     else if (cur.type != TOKEN_DEDENT)
       error(); // dva prikazy bez oddelovace

@@ -2,7 +2,7 @@
  * Implementace překladače imperativního jazyka IFJ26
  *
  * symtable.h -- tabulka symbolov (ADT), varianta TRP-izp
- * 
+ *
  * Autor: xbeniaj00 (Benjamin Joes Benian)
  *
  *  - ptr na symbol plati kym sa nepopne jeho scope!?! (funkcie az do free)
