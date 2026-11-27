@@ -93,9 +93,17 @@ GitHub nám sloužil hlavně k ukládání verzí kódu. Změny jsme přes něj 
 
 \subsection{Testování}
 \begin{itemize}
-  \item Jednotkové testy modulů (\TODO{framework}).
-  \item Integrační testy: sada vstupních programů s~očekávaným výstupem a návratovým kódem.
-  \item \TODO{CI, kontrola paměti nástrojem \id{valgrind}\,\dots}
+  \item Testy sú krátke programy v~IFJ26 a ku každému je napísané, čo má
+        vypísať alebo s~akým kódom má prekladač skončiť. Dokopy ich je 468.
+  \item Skript \id{tests/run\_tests.sh} každý test preloží, výsledok spustí
+        v~\id{ic26int} a porovná výstup aj návratový kód. Nie všetci sme
+        pracovali na Linuxe, preto sme si v~Pythone napísali aj jednoduchý
+        interpret, aby sa dalo testovať všade.
+  \item Ku každej chybe, ktorú sme našli, pribudol test, aby sa nevrátila.
+  \item Pri testovaní nám bol dobrým pomocníkom AI nástroj Claude. Pomáhal
+        nám vymýšľať okrajové prípady, na ktoré by sme sami nepomysleli,
+        a hľadať, prečo niektorý test padá.
+  \item Pamäť kontrolujeme nástrojom \id{valgrind}.
 \end{itemize}
 
 \subsection{Styl formátování kódu}
@@ -650,6 +658,123 @@ nejsou asociativní, proto \texttt{a < b < c} skončí chybou.
 \end{table}
 
 
+\section{Tabuľka symbolov}\label{sec:symtable}
+Tabuľku symbolov sme robili ako tabuľku s~rozptýlenými položkami
+s~implicitným zreťazením (TRP-izp), tak ako sme ju preberali na IAL. Pri
+kolízii sa položka uloží na najbližšie voľné miesto (obrázok~\ref{fig:symtable}).
+Veľkosť tabuľky je vždy mocnina dvoch, takže namiesto modula stačí z~hashu
+zobrať spodné bity. Keď je tabuľka plná do polovice, zväčší sa na dvojnásobok.
+Krok~1 síce podľa IAL vytvára shluky, ale keďže tabuľku plníme najviac do
+polovice, zostávajú krátke.
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[
+      slot/.style={draw, minimum width=1.3cm, minimum height=0.8cm},
+      full/.style={slot, fill=orange!15},
+      free/.style={slot, fill=gray!8, text=gray, font=\scriptsize\ttfamily},
+      rec/.style={draw, rounded corners=2pt, fill=orange!8, font=\scriptsize,
+                  align=center, minimum width=1.3cm, inner sep=3pt},
+      ptr/.style={-{Stealth[length=2mm]}},
+      probe/.style={-{Stealth[length=2.5mm]}, thick},
+      lbl/.style={font=\scriptsize}
+    ]
+    \node[full] (s0) at (0,0)    {};
+    \node[free] (s1) at (1.5,0)  {NULL};
+    \node[free] (s2) at (3,0)    {NULL};
+    \node[full] (s3) at (4.5,0)  {};
+    \node[full] (s4) at (6,0)    {};
+    \node[free] (s5) at (7.5,0)  {NULL};
+    \node[free] (s6) at (9,0)    {NULL};
+    \node[full] (s7) at (10.5,0) {};
+    \foreach \i in {0,...,7}
+      \node[lbl] at (1.5*\i,0.6) {\i};
+
+    \node[rec, below=1cm of s0] (r0) {\textbf{\id{sum}}\\Double, var\\uid 4};
+    \node[rec, below=1cm of s3] (r3) {\textbf{\id{x}}\\Int, var\\uid 1};
+    \node[rec, below=1cm of s4] (r4) {\textbf{\id{len}}\\Int, val\\uid 3};
+    \node[rec, below=1cm of s7] (r7) {\textbf{\id{y}}\\Double, val\\uid 2};
+    \foreach \i in {0,3,4,7} {
+      \fill (s\i.center) circle (2pt);
+      \draw[ptr] (s\i.center) -- (r\i.north);
+    }
+
+    \draw[probe] (4.5,0.9) to[bend left=50]
+      node[lbl, above] {\id{len}: 3 obsadené} (6,0.9);
+    \draw[probe] (10.5,0.9) -- (10.5,2.1) -|
+      node[lbl, pos=0.25, above] {\id{sum}: 7 obsadené, pokračuje od začiatku}
+      (0,0.9);
+  \end{tikzpicture}
+  \caption{Tabuľka jedného bloku s~8 miestami po \id{var x = 1},
+    \id{val y = 2.5}, \id{val len = 3} a \id{var sum = 0.0}. V~mieste tabuľky
+    je len ukazovateľ na záznam o~symbole (meno, typ, \id{var}/\id{val},
+    \id{uid}). \id{len} a \id{sum} mali svoje miesto (3 a 7) obsadené, preto
+    skončili na najbližšom voľnom, \id{sum} pretiekol z~konca na začiatok.
+    Miesta sú vypočítané našou rozptyľovacou funkciou.}
+  \label{fig:symtable}
+\end{figure}
+
+Najviac sme riešili bloky a zatieňovanie premenných (obrázok~\ref{fig:scopes}). Nakoniec má každý blok
+vlastnú malú tabuľku a tieto tabuľky sú na zásobníku. Premennú hľadáme od
+posledného bloku smerom von, takže vnútorná premenná prekryje vonkajšiu. Pri
+odchode z~bloku zahodíme celú jeho tabuľku naraz, takže sme nemuseli riešiť
+mazanie jednotlivých položiek, ktoré je pri implicitnom zreťazení dosť
+nepríjemné (IAL ho rieši zaslepením, my sme to vďaka blokom nepotrebovali). Funkcie sú v~jednej spoločnej tabuľke. Každá premenná dostane
+navyše vlastné číslo, ktoré potom použije generátor kódu.
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[
+      blk/.style={draw, fill=orange!15, minimum width=4.6cm, minimum height=0.9cm,
+                  font=\small},
+      glob/.style={draw, fill=gray!8, minimum width=4.6cm, minimum height=0.9cm,
+                   font=\small},
+      probe/.style={-{Stealth[length=2.5mm]}, thick},
+      lbl/.style={font=\scriptsize}
+    ]
+    \node[blk] (b2) at (0,0)    {\id{x}: Double, var, uid 2};
+    \node[blk] (b1) at (0,-0.9) {\id{x}: Int, var, uid 1};
+    \node[lbl, anchor=east] at (-2.5,0)    {vnútorný blok (cyklus)};
+    \node[lbl, anchor=east] at (-2.5,-0.9) {vonkajší blok (telo funkcie)};
+    \node[lbl, anchor=south] at (0,0.45) {vrchol zásobníka};
+    \draw[probe] (2.7,0.45) -- node[lbl, right, align=left]
+      {hľadanie \id{x}:\\zhora nadol,\\prvý nájdený vyhrá} (2.7,-1.35);
+
+    \node[glob] (g) at (0,-2.5) {\id{main}, \id{f}, \id{print}, \id{readInt}, \dots};
+    \node[lbl, anchor=east] at (-2.5,-2.5) {globálna tabuľka funkcií};
+  \end{tikzpicture}
+  \caption{Zásobník tabuliek pre program, kde je vo funkcii \id{var x = 1}
+    a v~cykle vo vnútri \id{var x = 2.5}. Každý blok je samostatná tabuľka
+    ako na obrázku~\ref{fig:symtable}. \id{x} v~cykle nájde premennú typu
+    \id{Double}, po skončení cyklu sa horná tabuľka zahodí a \id{x} je zase
+    \id{Int}. Funkcie sú v~jednej globálnej tabuľke mimo zásobníka.}
+  \label{fig:scopes}
+\end{figure}
+
+\subsection{Rozptyľovacia funkcia}\label{sec:hash}
+Rozptyľovaciu funkciu sme si napísali vlastnú. Nepotrebujeme, aby bola
+kryptografická, stačí, aby bola rýchla a aby aj podobné mená ako \id{tmp1}
+a \id{tmp2} skončili v~tabuľke ďaleko od seba. Pri každom znaku sa hash
+zrotuje o~7~bitov (pri rotácii sa na rozdiel od posunu nič nestratí),
+primieša sa k~nemu znak vynásobený svojou pozíciou, aby \id{ab} a~\id{ba}
+nedali rovnaký výsledok, a celé sa to vynásobí nepárnym číslom. Na konci hash
+ešte premiešame, lebo index berieme len zo spodných bitov a chceli sme, aby sa
+v~nich prejavili aj tie horné. Vďaka tomu aj malá zmena mena zmení celý hash
+(efekt laviny). Nápady sme brali zo známych funkcií FNV, djb2
+a MurmurHash.
+
+\section{Generovanie kódu}\label{sec:codegen}
+Generátor prejde strom po sémantickej analýze a vypíše program v~IFJcode26.
+Výrazy počítame na zásobníku interpretu. Každý výraz tam nechá jednu hodnotu,
+takže nepotrebujeme pomocné premenné. Premenné majú v~cieľovom kóde za menom
+svoje číslo (napr. \id{LF@x\$7}), takže sa zatienené premenné neprekrývajú. Na
+jednu vec sme si museli dať pozor: \id{DEFVAR} v~cykle skončí pri druhom
+prechode chybou~52, preto všetky \id{DEFVAR} vypíšeme hneď na začiatok
+funkcie. \term{\&\&} a~\term{||} sa vyhodnocujú skrátene. Výstup sa skladá
+v~pamäti a vypíše sa až na konci, aby pri chybe nezostal na výstupe
+polovičný program.
+
+
 \section{Popis modulů}
 
 \begin{description}[style=nextline]
@@ -658,9 +783,9 @@ nejsou asociativní, proto \texttt{a < b < c} skončí chybou.
   \item[\id{token.c/h}] Definice typů tokenů a pomocné funkce pro scanner.
   \item[\id{parser.c/h}] Rekurzivní sestup podle LL(1) gramatiky, precedenční analýza a vytváření AST. Funkce \id{parse\_program()} vrací kořen stromu.
   \item[\id{tree.c/h}] Definice uzlů AST (\id{NodeKind}, \id{struct Node}) a funkce \id{make\_x}, kterými parser uzly vytváří.
-  \item[\id{symtable.c/h}] \TODO{Tabulka s~rozptýlenými položkami s~otevřenou adresací (varianta TRP-izp); rozptylovací funkce \dots, řešení kolizí \dots}
+  \item[\id{symtable.c/h}] Tabulka s~rozptýlenými položkami s~implicitním zřetězením (TRP-izp) s~vlastní rozptylovací funkcí. Obsahuje globální tabulku funkcí a zásobník tabulek proměnných pro bloky.
   \item[\id{analyzer.c/h}] Kontrola definic proměnných a funkcí, návratových typů a kompatibility datových typů.
-  \item[\id{codegen.c/h}] \TODO{Generování cílového kódu z~AST.}
+  \item[\id{codegen.c/h}] Průchod AST, který vypíše program v~IFJcode26. Výrazy počítá na datovém zásobníku interpretu.
 \end{description}
 
 \section{Využití prostředků AI}
@@ -687,6 +812,9 @@ Při práci na sémantické analýze jsme potřebovali sjednotit způsob práce 
     \bibitem{latex}
     LaTeX. \emph{Vykreslování diagramů, úprava dokumentace atd.} [online]. 2026.
     Dostupné z:~\url{https://www.learnlatex.org/en/}
+  \bibitem{murmur3}
+    Austin Appleby. \emph{MurmurHash3 a SMHasher} [online].
+    Dostupné z:~\url{https://github.com/aappleby/smhasher}
 \end{thebibliography}
 
 \end{document}
