@@ -53,7 +53,7 @@
     \midrule
     \textbf{Matyáš Němeček} & \textbf{\id{xnemecm00}} & \textbf{282780} & \textbf{25\,\%} \\
     Pavel Šenkýř            & \id{xsenkyp00}          & 282122          & 25\,\% \\
-    Joe Benjamin Benian              & \id{xbeniaj00}          & 269498          & 25\,\% \\
+    Benjamin Joes Benian              & \id{xbeniaj00}          & 269498          & 25\,\% \\
     Tomáš Smrčka            & \id{xsmrckt00}          & 282230          & 25\,\% \\
     \bottomrule
   \end{tabular}
@@ -79,7 +79,7 @@
   \item \textbf{Matyáš Němeček} -- lexikální analyzátor (\id{scanner.c}), kontrola syntaktického analyzátoru
   \item \textbf{Pavel Šenkýř} -- syntaktický analyzátor, kontrola sémantického analyzátoru
   \item \textbf{Tomáš Smrčka} -- sémantická analýza, kontrola generátoru
-  \item \textbf{Joe Benjamin Benian} -- generátor kódu, kontrola lexikálního analyzátoru.
+  \item \textbf{Benjamin Joes Benian} -- generátor kódu, kontrola lexikálního analyzátoru.
 \end{itemize}
 
 
@@ -128,23 +128,23 @@ Na obrázku~\ref{fig:arch} je vidět, jak jsou jednotlivé části překladače 
       flow/.style={-{Stealth[length=3mm]}, thick},
       lbl/.style={font=\small\itshape, midway}
     ]
-    \node[data] (src)  {zdrojový kód\\(\id{IFJ2026})};
-    \node[mod, right=of src]  (lex) {lexikální\\analyzátor};
-    \node[mod, right=of lex]  (par) {syntaktický\\analyzátor};
-    \node[mod, below=1.6cm of par] (expr) {precedenční\\analýza výrazů};
-    \node[mod, right= of par]  (sem) {sémantická\\analýza};
-    \node[mod, below=1.6cm of sem] (gen) {generátor\\kódu};
-    \node[data, below=1.4cm of gen] (out) {cílový kód\\(\id{IFJCode})};
-    \node[mod,below=1.6cm of lex] (sym) {tabulka symbolů\\(TRP-izp)};
+    \node[data] (src)  at (0,0)     {zdrojový kód\\(\id{IFJ26})};
+    \node[mod]  (lex)  at (3.6,0)   {lexikální\\analyzátor};
+    \node[mod]  (par)  at (7.6,0)   {syntaktický\\analyzátor};
+    \node[mod]  (sem)  at (11.6,0)  {sémantická\\analýza};
+    \node[mod]  (expr) at (7.6,-2.4)  {precedenční\\analýza výrazů};
+    \node[mod]  (gen)  at (11.6,-2.4) {generátor\\kódu};
+    \node[mod]  (sym)  at (7.6,-4.8)  {tabulka symbolů\\(TRP-izp)};
+    \node[data] (out)  at (11.6,-4.8) {cílový kód\\(\id{IFJcode26})};
 
     \draw[flow] (src) -- node[lbl, above] {znaky} (lex);
     \draw[flow] (lex) -- node[lbl, above] {tokeny} (par);
     \draw[flow, <->] (par) -- node[lbl, right] {tokeny / AST} (expr);
     \draw[flow] (par) -- node[lbl, above] {AST} (sem);
     \draw[flow] (sem) -- node[lbl, right] {AST} (gen);
-    \draw[flow] (gen) -- (out);
-    \draw[flow, <->, dashed] (sym) -- (par);
-    \draw[flow, <->, dashed] (sym.south) |- ++(0,-0.6) -| (sem.south west);
+    \draw[flow] (gen) -- node[lbl, right] {text} (out);
+    \draw[flow, <->, dashed] (sym.north east) -- node[lbl, sloped, above] {symboly} (sem.south west);
+    \draw[flow, <->, dashed] (sym.east) -- node[lbl, sloped, below] {symboly} (gen.south west);
   \end{tikzpicture}
   \caption{Blokové schéma architektury překladače}
   \label{fig:arch}
